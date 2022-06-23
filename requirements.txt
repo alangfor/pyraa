@@ -1,0 +1,10 @@
+
+h5py 
+matplotlib 
+numba 
+numpy 
+scipy
+pandas 
+progressbar
+
+
