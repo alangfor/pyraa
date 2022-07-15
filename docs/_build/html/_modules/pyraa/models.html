@@ -1,0 +1,1336 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="English" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>pyraa.models &mdash; PyRAA 0.1 documentation</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../index.html" class="icon icon-home"> PyRAA
+            <img src="../../_static/pyraa_logo.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../tutorials.html">PyRAA Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api.html">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../acknowldegments.html">PyRAA Acknowlegements</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">PyRAA</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+      <li>pyraa.models</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for pyraa.models</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    dynamical models module ``models.py`` </span>
+<span class="sd">    </span>
+<span class="sd">    This module contains functions to perform calculations in</span>
+<span class="sd">    restricted multi-body dynamical models</span>
+
+<span class="sd">    .. tip::</span>
+<span class="sd">        All functions for a given model can be called through the ``models.Model`` </span>
+<span class="sd">        class</span>
+
+<span class="sd">    .. attention::</span>
+<span class="sd">        Performance critical calculations are now performed with ``numba``!</span>
+
+<span class="sd">    :Authors: </span>
+<span class="sd">        Drew Langford</span>
+
+<span class="sd">    :Last Edit: </span>
+<span class="sd">        Langford, 06/2022</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">time</span>
+
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">numba</span> <span class="k">as</span> <span class="nn">nb</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">scipy</span> <span class="kn">import</span> <span class="n">optimize</span> <span class="k">as</span> <span class="n">sci_op</span>
+<span class="kn">from</span> <span class="nn">scipy</span> <span class="kn">import</span> <span class="n">special</span> <span class="k">as</span> <span class="n">sci_sp</span>
+
+
+<span class="k">def</span> <span class="nf">create_system</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">mu</span><span class="p">,</span> <span class="n">e</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">m1</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">m2</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">a12</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> 
+                    <span class="n">t12</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">m3</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">a3</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">t3</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+
+    <span class="n">sys_dict</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s1">&#39;Name&#39;</span> <span class="p">:</span> <span class="n">name</span><span class="p">,</span>
+        <span class="s1">&#39;mu&#39;</span> <span class="p">:</span> <span class="n">mu</span><span class="p">,</span>
+        <span class="s1">&#39;e&#39;</span> <span class="p">:</span> <span class="n">e</span><span class="p">,</span>
+        <span class="s1">&#39;m1&#39;</span> <span class="p">:</span> <span class="n">m1</span><span class="p">,</span>
+        <span class="s1">&#39;m2&#39;</span> <span class="p">:</span> <span class="n">m2</span><span class="p">,</span>
+        <span class="s1">&#39;m3&#39;</span> <span class="p">:</span> <span class="n">m3</span><span class="p">,</span>
+        <span class="s1">&#39;a12&#39;</span> <span class="p">:</span> <span class="n">a12</span><span class="p">,</span>
+        <span class="s1">&#39;a3&#39;</span> <span class="p">:</span> <span class="n">a3</span><span class="p">,</span>
+        <span class="s1">&#39;t12&#39;</span> <span class="p">:</span> <span class="n">t12</span><span class="p">,</span>
+        <span class="s1">&#39;t3&#39;</span> <span class="p">:</span> <span class="n">t3</span>
+    <span class="p">}</span>
+
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;systems.json&#39;</span><span class="p">,</span> <span class="s1">&#39;a&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">outfile</span><span class="p">:</span>
+        <span class="n">json</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">sys_dict</span><span class="p">,</span> <span class="n">outfile</span><span class="p">)</span>
+
+
+
+<span class="n">systems</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">&#39;EarthMoon&#39;</span> <span class="p">:</span> <span class="p">{</span>
+        <span class="s1">&#39;m1&#39;</span> <span class="p">:</span> <span class="mf">5.97e24</span><span class="p">,</span>
+        <span class="s1">&#39;m2&#39;</span> <span class="p">:</span> <span class="mf">0.073e24</span><span class="p">,</span>
+        <span class="s1">&#39;mu &#39;</span> <span class="p">:</span> <span class="mf">0.0121505856</span><span class="p">,</span>
+        <span class="s1">&#39;e&#39;</span> <span class="p">:</span> <span class="mf">0.0549</span><span class="p">,</span>
+        <span class="s1">&#39;l_st&#39;</span> <span class="p">:</span> <span class="mi">384748</span><span class="p">,</span>
+        <span class="s1">&#39;t_st&#39;</span> <span class="p">:</span> <span class="mi">375700</span><span class="p">,</span>
+    <span class="p">},</span>
+
+    <span class="s1">&#39;EarthMoonSun&#39;</span> <span class="p">:</span> <span class="p">{</span>
+        <span class="s1">&#39;m1&#39;</span> <span class="p">:</span> <span class="mf">5.97e24</span><span class="p">,</span>
+        <span class="s1">&#39;m2&#39;</span> <span class="p">:</span> <span class="mf">0.073e24</span><span class="p">,</span>
+        <span class="s1">&#39;m3&#39;</span> <span class="p">:</span> <span class="mf">1.989e30</span><span class="p">,</span>
+        <span class="s1">&#39;mu&#39;</span> <span class="p">:</span> <span class="mf">0.0121505856</span><span class="p">,</span>
+        <span class="s1">&#39;e&#39;</span> <span class="p">:</span> <span class="mf">0.0549</span><span class="p">,</span>
+        <span class="s1">&#39;l_st&#39;</span> <span class="p">:</span> <span class="mi">384748</span><span class="p">,</span>
+        <span class="s1">&#39;t_st&#39;</span> <span class="p">:</span> <span class="mi">375700</span><span class="p">,</span>
+        <span class="s1">&#39;a_s&#39;</span> <span class="p">:</span> <span class="mi">149600000</span><span class="o">/</span><span class="mi">384748</span><span class="p">,</span>
+        <span class="s1">&#39;m_s&#39;</span> <span class="p">:</span> <span class="mf">1.989e30</span><span class="o">/</span><span class="p">(</span><span class="mf">5.97e24</span> <span class="o">+</span> <span class="mf">0.073e24</span><span class="p">)</span>
+    <span class="p">}</span>
+
+<span class="p">}</span>
+
+<div class="viewcode-block" id="Models"><a class="viewcode-back" href="../../models.html#pyraa.models.Models">[docs]</a><span class="k">class</span> <span class="nc">Models</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Models - class object to call functions related to a specified </span>
+<span class="sd">    restricted dynamical model</span>
+
+<span class="sd">    .. Note:</span>
+
+<span class="sd">        Hello, there</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    -----------</span>
+<span class="sd">    dynamics: str, optional</span>
+<span class="sd">        sets restricted dynamical model of choice. </span>
+<span class="sd">        Options include: &#39;CR3BP&#39;, &#39;ER3BP&#39;.</span>
+<span class="sd">        &#39;BCR4BP&#39; coming soon!</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    None</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dynamics</span> <span class="o">=</span> <span class="s1">&#39;CR3BP&#39;</span><span class="p">):</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">dynamics</span> <span class="o">=</span> <span class="n">dynamics</span>
+
+        <span class="c1"># Equation of motion models</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">eom_dict</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;CR3BP&#39;</span> <span class="p">:</span> <span class="n">cr3bp_eom</span><span class="p">,</span>
+            <span class="s1">&#39;ER3BP&#39;</span> <span class="p">:</span> <span class="n">er3bp_eom</span><span class="p">,</span>
+            <span class="c1">#&#39;BCR4BP&#39; : self.bcr4bp_state,</span>
+            <span class="p">}</span>
+
+        <span class="c1"># Jacobian matrices for models</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">jacobian_dict</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;CR3BP&#39;</span> <span class="p">:</span> <span class="n">cr3bp_jacobian</span><span class="p">,</span>
+            <span class="s1">&#39;ER3BP&#39;</span> <span class="p">:</span> <span class="n">er3bp_jacobian</span><span class="p">,</span>
+            <span class="c1"># &#39;BCR4BP&#39; : self.cr3bp_jacobian, # Not finished</span>
+            <span class="p">}</span>
+
+        <span class="c1"># Jacobi Constant evaluation</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">JC_dict</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;CR3BP&#39;</span> <span class="p">:</span> <span class="n">cr3bp_JC</span><span class="p">,</span>
+            <span class="s1">&#39;ER3BP&#39;</span> <span class="p">:</span> <span class="n">er3bp_JC</span><span class="p">,</span>
+            <span class="p">}</span>
+        
+        <span class="c1"># Primary states of models</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pstates_dict</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;CR3BP&#39;</span> <span class="p">:</span> <span class="n">cr3bp_pstates</span><span class="p">,</span>
+            <span class="s1">&#39;ER3BP&#39;</span> <span class="p">:</span> <span class="n">er3bp_pstates</span><span class="p">,</span>
+            <span class="c1"># &#39;BCR4BP&#39; : self.bcr4bp_pstates</span>
+            <span class="p">}</span>
+
+        <span class="c1"># Lagrange point states</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Lstates_dict</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;CR3BP&#39;</span> <span class="p">:</span> <span class="n">cr3bp_Lstates</span><span class="p">,</span>
+            <span class="s1">&#39;ER3BP&#39;</span> <span class="p">:</span> <span class="n">er3bp_Lstates</span><span class="p">,</span>
+            <span class="c1"># &#39;BCR4BP&#39; : self.cr3bp_Lstates # Not finished</span>
+            <span class="p">}</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">transform_dict</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;CR3BP&#39;</span> <span class="p">:</span> <span class="n">cr3bp_transform</span><span class="p">,</span>
+            <span class="s1">&#39;ER3BP&#39;</span> <span class="p">:</span> <span class="n">er3bp_transform</span>
+        <span class="p">}</span>
+
+        <span class="k">pass</span> 
+
+<div class="viewcode-block" id="Models.get_eom_func"><a class="viewcode-back" href="../../models.html#pyraa.models.Models.get_eom_func">[docs]</a>    <span class="k">def</span> <span class="nf">get_eom_func</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        get_eom_func - returns function for model&#39;s equations of motion</span>
+
+<span class="sd">        The eom_func may be used as the RHS in numerical ode integration</span>
+
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        None</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        eom_func: function</span>
+<span class="sd">            fucntion evaluates the dynamic&#39;s equations of motion </span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">eom_func</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">eom_dict</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">dynamics</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">eom_func</span></div>
+
+
+<div class="viewcode-block" id="Models.get_jacobian_func"><a class="viewcode-back" href="../../models.html#pyraa.models.Models.get_jacobian_func">[docs]</a>    <span class="k">def</span> <span class="nf">get_jacobian_func</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        get_jacobian_func - returns function for model&#39;s Jacobian matrix</span>
+
+<span class="sd">        The Jacobian, df/dx, is implemented while integrating the STM</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        None</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        jacobian_func: function</span>
+<span class="sd">            fucntion evaluates the dynamical models Jacobian matrix</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">jacobian_func</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">jacobian_dict</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">dynamics</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">jacobian_func</span></div>
+
+<div class="viewcode-block" id="Models.get_JC_func"><a class="viewcode-back" href="../../models.html#pyraa.models.Models.get_JC_func">[docs]</a>    <span class="k">def</span> <span class="nf">get_JC_func</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        get_JC_func - returns function for calculating Jacobi Constant</span>
+
+<span class="sd">        ** Note, the Jacobi Constant in **not** invariant in </span>
+<span class="sd">        non-autonomous models, e.g. &#39;ER3BP&#39;</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        None</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        jacobian_func: function</span>
+<span class="sd">            function evaluates the Jacobi constant</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">JC_func</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">JC_dict</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">dynamics</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">JC_func</span></div>
+
+<div class="viewcode-block" id="Models.get_pstates_func"><a class="viewcode-back" href="../../models.html#pyraa.models.Models.get_pstates_func">[docs]</a>    <span class="k">def</span> <span class="nf">get_pstates_func</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        get_pstates_func - returns function for calculating primary states</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        None</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        pstates_func: function</span>
+<span class="sd">            function evaluates the dynamical model&#39;s primary state vectors</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">pstate_func</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pstates_dict</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">dynamics</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">pstate_func</span></div>
+
+<div class="viewcode-block" id="Models.get_Lstates_func"><a class="viewcode-back" href="../../models.html#pyraa.models.Models.get_Lstates_func">[docs]</a>    <span class="k">def</span> <span class="nf">get_Lstates_func</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        get_Lstates_func - returns function for calculating Lagrange point states</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        None</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        Lstates_func: function</span>
+<span class="sd">            function evaluates the dynamical model&#39;s Lagrange point state vectors</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">Lstate_func</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Lstates_dict</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">dynamics</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">Lstate_func</span></div>
+
+<div class="viewcode-block" id="Models.get_transform_func"><a class="viewcode-back" href="../../models.html#pyraa.models.Models.get_transform_func">[docs]</a>    <span class="k">def</span> <span class="nf">get_transform_func</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        get_transform_func - returns function for calculating </span>
+<span class="sd">        synodic to inertial transformation matrix</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        None</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        transform_func: function</span>
+<span class="sd">            function evaluates the dynamical model&#39;s Lagrange point state vectors</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">transform_func</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">transform_dict</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">dynamics</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">transform_func</span></div></div>
+
+
+<span class="c1">##########################################################</span>
+<span class="c1">##################### General Methods ####################</span>
+<span class="c1">##########################################################</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Methods used by one or more models which have general</span>
+<span class="sd">purpose use</span>
+
+<span class="sd">Methods</span>
+<span class="sd">-------</span>
+<span class="sd">LPx_func - zero function for x value of collinear eq. points</span>
+<span class="sd">E_anom_func - zero function for Eccen. Anomaly</span>
+<span class="sd">calc_E_anom - calculates Eccen. Anomaly using Newton&#39;s method</span>
+<span class="sd">calc_f_Anom - calculates true anomaly from E, e</span>
+<span class="sd">dfdzeta - complex step differentiation for epoch continuity </span>
+<span class="sd">        in the ER3BP !!!! IN DEVELOPMENT</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="lpx_func"><a class="viewcode-back" href="../../models.html#pyraa.models.lpx_func">[docs]</a><span class="nd">@nb</span><span class="o">.</span><span class="n">njit</span><span class="p">()</span>
+<span class="k">def</span> <span class="nf">lpx_func</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">mu</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">A</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">B</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    calc_LPx - zero function for x value of collinear eq. points</span>
+
+<span class="sd">    Function called in root-finding algorithm for x-position of </span>
+<span class="sd">    collinear Lagrange points</span>
+
+<span class="sd">    *Accelerated* with ``numba``</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    x: float</span>
+<span class="sd">        x-position </span>
+<span class="sd">    mu: float</span>
+<span class="sd">        mass ratio of system</span>
+<span class="sd">    A: int</span>
+<span class="sd">        sign of p1 force term</span>
+<span class="sd">    B: int</span>
+<span class="sd">        sign of p2 force term</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    f_lpx: float</span>
+<span class="sd">        function value</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">term1</span> <span class="o">=</span> <span class="n">x</span>
+    <span class="n">term2</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">mu</span><span class="p">)</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="n">x</span><span class="o">+</span><span class="n">mu</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+    <span class="n">term3</span> <span class="o">=</span> <span class="p">(</span><span class="n">mu</span><span class="p">)</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="n">x</span><span class="o">-</span><span class="mi">1</span><span class="o">+</span><span class="n">mu</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+    
+    <span class="n">f_lpx</span> <span class="o">=</span> <span class="n">term1</span> <span class="o">+</span> <span class="n">A</span><span class="o">*</span><span class="n">term2</span> <span class="o">+</span> <span class="n">B</span><span class="o">*</span><span class="n">term3</span>
+    
+    <span class="k">return</span> <span class="n">f_lpx</span> </div>
+
+<div class="viewcode-block" id="ecc_anom_func"><a class="viewcode-back" href="../../models.html#pyraa.models.ecc_anom_func">[docs]</a><span class="nd">@nb</span><span class="o">.</span><span class="n">njit</span>
+<span class="k">def</span> <span class="nf">ecc_anom_func</span><span class="p">(</span><span class="n">E</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">M</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">e</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    ecc_anom_func - zero function for eccentric anomaly</span>
+
+<span class="sd">    Function is used with root finding algorithm to calculate eccentric anomaly</span>
+
+<span class="sd">    *Accelerated* with ``numba``</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    E: float</span>
+<span class="sd">        eccentric anomaly</span>
+<span class="sd">    M: float</span>
+<span class="sd">        mean anomaly</span>
+<span class="sd">    e: float</span>
+<span class="sd">        eccentricity</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    f_e: float</span>
+<span class="sd">        function value, E - e*sin(E) - M</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">f</span> <span class="o">=</span> <span class="n">E</span> <span class="o">-</span> <span class="n">e</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">E</span><span class="p">)</span> <span class="o">-</span> <span class="n">M</span>
+    
+    <span class="k">return</span> <span class="n">f</span></div>
+    
+<div class="viewcode-block" id="calc_ecc_anom"><a class="viewcode-back" href="../../models.html#pyraa.models.calc_ecc_anom">[docs]</a><span class="k">def</span> <span class="nf">calc_ecc_anom</span><span class="p">(</span><span class="n">M</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">e</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    calc_E_anom - calculates Eccen. Anomaly using Newton&#39;s method</span>
+
+<span class="sd">    Function calls E_anom_func to find root with ``scipy.optimize.newton``</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    M: float</span>
+<span class="sd">        mean anomaly</span>
+<span class="sd">    e: float</span>
+<span class="sd">        eccentricity</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    E: float</span>
+<span class="sd">        eccentric anomaly</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="n">E0</span> <span class="o">=</span> <span class="n">M</span> <span class="o">-</span> <span class="n">e</span><span class="o">/</span><span class="mi">2</span>
+    <span class="n">E</span> <span class="o">=</span> <span class="n">sci_op</span><span class="o">.</span><span class="n">newton</span><span class="p">(</span><span class="n">ecc_anom_func</span><span class="p">,</span> <span class="n">E0</span><span class="p">,</span> <span class="n">args</span> <span class="o">=</span> <span class="p">[</span><span class="n">M</span><span class="p">,</span> <span class="n">e</span><span class="p">],</span> <span class="n">maxiter</span> <span class="o">=</span> <span class="mi">100</span><span class="p">)</span>
+    
+    <span class="k">return</span> <span class="n">E</span></div>
+
+<div class="viewcode-block" id="calc_E_series"><a class="viewcode-back" href="../../models.html#pyraa.models.calc_E_series">[docs]</a><span class="nd">@nb</span><span class="o">.</span><span class="n">njit</span><span class="p">(</span><span class="n">cache</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">calc_E_series</span><span class="p">(</span><span class="n">M</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">e</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">Js</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    calc_E_series - calculates eccentric anomaly based on series expansion</span>
+
+<span class="sd">    *Accelerated* with ``numba``</span>
+
+<span class="sd">    Uses Bessel function series expansion found in:</span>
+<span class="sd">    </span>
+<span class="sd">    * `Murray &amp; Durmott 1999 &lt;https://doi.org/10.1017/CBO9781139174817&gt;`_</span>
+<span class="sd">    * `Philcox, Goodman, Slepian 2021 &lt;https://arxiv.org/pdf/2103.15829.pdf&gt;`_</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    M: float</span>
+<span class="sd">        mean anomaly</span>
+<span class="sd">    e: float</span>
+<span class="sd">        eccentricity </span>
+<span class="sd">    s: 1xN array</span>
+<span class="sd">        series expansion indicies [1, N]</span>
+<span class="sd">    Js: 1xN array</span>
+<span class="sd">        precomputed Bessel function of indicies [1, N]</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    E: float</span>
+<span class="sd">        eccentric anomaly</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">E</span> <span class="o">=</span> <span class="n">M</span> <span class="o">+</span> <span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">Js</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">s</span><span class="o">*</span><span class="n">M</span><span class="p">)</span><span class="o">/</span><span class="n">s</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">E</span></div>
+
+<div class="viewcode-block" id="calc_f_anom"><a class="viewcode-back" href="../../models.html#pyraa.models.calc_f_anom">[docs]</a><span class="nd">@nb</span><span class="o">.</span><span class="n">njit</span>
+<span class="k">def</span> <span class="nf">calc_f_anom</span><span class="p">(</span><span class="n">E</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">e</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    calc_f_Anom - calculates true anomaly from E, e</span>
+
+<span class="sd">    *Accelerated* with ``numba``</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    E: float</span>
+<span class="sd">        eccentric anomaly</span>
+<span class="sd">    e: float</span>
+<span class="sd">        eccentricity of system</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    f: float</span>
+<span class="sd">        true anomaly</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">f</span> <span class="o">=</span> <span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">arctan</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">((</span><span class="mi">1</span><span class="o">+</span><span class="n">e</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">e</span><span class="p">))</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">tan</span><span class="p">(</span><span class="n">E</span><span class="o">/</span><span class="mi">2</span><span class="p">))</span>
+    
+    <span class="k">return</span> <span class="n">f</span></div>
+
+
+<span class="c1"># def dfdzeta(self, tau, s, dP, dP_el):</span>
+<span class="c1">#     &quot;&quot;&quot; </span>
+<span class="c1">#     dfdzeta - complex step differentiation for epoch continuity </span>
+<span class="c1">#         in the ER3BP</span>
+    
+<span class="c1">#     &quot;&quot;&quot;</span>
+
+<span class="c1">#     # Calculate eccentric related values</span>
+<span class="c1">#     xi, n, ndot, xidot = self.e_vals(tau)</span>
+
+<span class="c1">#     # Extract non-dim var for readability in eq. of motion</span>
+<span class="c1">#     x, y, z, xdot, ydot, zdot = s[0:6]</span>
+
+<span class="c1">#     # Get char values</span>
+<span class="c1">#     mu = self.char_dict[self.dynamics][&#39;mu&#39;]</span>
+
+<span class="c1">#     # Calculate primary distances</span>
+<span class="c1">#     e_state, m_state = self.er3bp_pstates(tau)</span>
+
+<span class="c1">#     e_state = np.array(e_state, dtype = np.complex128)</span>
+<span class="c1">#     m_state = np.array(m_state, dtype = np.complex128)</span>
+
+<span class="c1">#     # Peturb either primary in one component of their position into the Im axis</span>
+<span class="c1">#     dxi = 1e-7j</span>
+<span class="c1">#     dx = 1e-7</span>
+<span class="c1">#     if dP == 0:</span>
+<span class="c1">#         e_state[dP_el] = e_state[dP_el] + dxi</span>
+<span class="c1">#     elif dP == 1:</span>
+<span class="c1">#         m_state[dP_el] = m_state[dP_el] + dxi</span>
+<span class="c1">#     r13 = np.linalg.norm(np.array(s[0:3], dtype=np.complex128) - e_state[0:3])</span>
+<span class="c1">#     r23 = np.linalg.norm(np.array(s[0:3], dtype=np.complex128) - m_state[0:3])</span>
+
+<span class="c1">#     # EOM calculations</span>
+<span class="c1">#     xddot =  2*n*ydot + ndot*y + (n**2)*x - ((1-mu)/r13**3)*(x - e_state[0]) - (mu/r23**3)*(x - m_state[0])</span>
+<span class="c1">#     yddot = -2*n*xdot - ndot*x + (n**2)*y - ((1-mu)/r13**3)*(y - e_state[1]) - (mu/r23**3)*(y - m_state[1])</span>
+<span class="c1">#     zddot = -((1-mu)/r13**3)*(z - e_state[2]) - (mu/r23**3)*(z - m_state[2])</span>
+
+<span class="c1">#     ds = np.array([xdot.imag, ydot.imag, zdot.imag, xddot.imag, yddot.imag, zddot.imag])/dx</span>
+
+<span class="c1">#     return ds</span>
+
+
+<span class="c1">##########################################################</span>
+<span class="c1">##################### CR3BP Methods ######################</span>
+<span class="c1">##########################################################</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Methods used for CR3BP dynamical model</span>
+
+<span class="sd">Methods</span>
+<span class="sd">-------</span>
+
+<span class="sd">cr3bp_eom - CR3BP state function (EOM and STM) for numerical integration</span>
+<span class="sd">cr3bp_jacobian - calculates the jacobian matrix of cr3bp eom </span>
+<span class="sd">cr3bp_JC - calculate Jacobi constant in cr3bp model</span>
+<span class="sd">cr3bp_pstates - returns state vectors of the primaries in the cr3bp</span>
+<span class="sd">cr3bp_Lstates - calculates and returns array of Lagrange points in the cr3bp</span>
+<span class="sd">cr3bp_transform - computes transformation matrix from synodic to inertial frame</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="cr3bp_eom"><a class="viewcode-back" href="../../models.html#pyraa.models.cr3bp_eom">[docs]</a><span class="nd">@nb</span><span class="o">.</span><span class="n">njit</span><span class="p">(</span><span class="n">cache</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">cr3bp_eom</span><span class="p">(</span><span class="n">tau</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">mu</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">e</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">s</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">Js</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="n">eval_STM</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">p_event</span><span class="p">:</span> <span class="nb">tuple</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">epoch</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; </span>
+<span class="sd">    cr3bp_eom - CR3BP state function (EOM and STM) for numerical integration</span>
+
+<span class="sd">    *Accelerated* with ``nb.njit(cache = True)``</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    tau: float</span>
+<span class="sd">        non-dim time</span>
+<span class="sd">    state: 1x6 array</span>
+<span class="sd">        non-dim state vector</span>
+<span class="sd">    mu: float</span>
+<span class="sd">        mass ratio of system</span>
+<span class="sd">    e: float, optional</span>
+<span class="sd">        eccentricity of system</span>
+<span class="sd">    s: 1xN array, optional</span>
+<span class="sd">        pre-computed indicies for eccentric anomaly series</span>
+<span class="sd">        **NOT** used in CR3BP</span>
+<span class="sd">    Js: 1xN array, optional</span>
+<span class="sd">        pre-computed Bessel funcs for eccentric anomaly series </span>
+<span class="sd">        **NOT** used in CR3BP</span>
+<span class="sd">    eval_STM: bool, optional</span>
+<span class="sd">        if True, computes STM for integration</span>
+<span class="sd">    p_event: tuple, optional</span>
+<span class="sd">        sets poincare event</span>
+<span class="sd">    epoch: bool, optional</span>
+<span class="sd">        if True, calculates derivative of state w/ respect to epoch</span>
+<span class="sd">    </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    dstate: 1x6 array **or** 1x42 array, if ``eval_STM = True``</span>
+<span class="sd">        derivative of state array</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">p1_state</span><span class="p">,</span> <span class="n">p2_state</span> <span class="o">=</span> <span class="n">cr3bp_pstates</span><span class="p">(</span><span class="n">tau</span><span class="p">,</span> <span class="n">mu</span><span class="p">)</span>
+    
+    <span class="c1"># Extract non-dim var for readability in eq. of motion</span>
+    <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">xdot</span><span class="p">,</span> <span class="n">ydot</span><span class="p">,</span> <span class="n">zdot</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">6</span><span class="p">]</span>
+
+    <span class="c1"># Calculate relative position vector form sc to m1/m2</span>
+    <span class="n">r13</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">]</span> <span class="o">-</span> <span class="n">p1_state</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">])</span>
+    <span class="n">r23</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">]</span> <span class="o">-</span> <span class="n">p2_state</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">])</span>
+
+    <span class="c1"># CR3BP non-dim equations of motion</span>
+    <span class="n">xddot</span> <span class="o">=</span> <span class="mi">2</span><span class="o">*</span><span class="n">ydot</span> <span class="o">+</span> <span class="n">x</span> <span class="o">-</span> <span class="p">((</span><span class="mi">1</span><span class="o">-</span><span class="n">mu</span><span class="p">)</span><span class="o">/</span><span class="n">r13</span><span class="o">**</span><span class="mi">3</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">x</span> <span class="o">+</span> <span class="n">mu</span><span class="p">)</span> <span class="o">-</span> <span class="p">(</span><span class="n">mu</span><span class="o">/</span><span class="n">r23</span><span class="o">**</span><span class="mi">3</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">mu</span><span class="p">))</span>
+    <span class="n">yddot</span> <span class="o">=</span> <span class="o">-</span><span class="mi">2</span><span class="o">*</span><span class="n">xdot</span> <span class="o">+</span> <span class="n">y</span> <span class="o">-</span> <span class="p">((</span><span class="mi">1</span><span class="o">-</span><span class="n">mu</span><span class="p">)</span><span class="o">/</span><span class="n">r13</span><span class="o">**</span><span class="mi">3</span><span class="p">)</span><span class="o">*</span><span class="n">y</span> <span class="o">-</span> <span class="p">(</span><span class="n">mu</span><span class="o">/</span><span class="n">r23</span><span class="o">**</span><span class="mi">3</span><span class="p">)</span><span class="o">*</span><span class="n">y</span>
+    <span class="n">zddot</span> <span class="o">=</span> <span class="o">-</span> <span class="p">((</span><span class="mi">1</span><span class="o">-</span><span class="n">mu</span><span class="p">)</span><span class="o">/</span><span class="n">r13</span><span class="o">**</span><span class="mi">3</span><span class="p">)</span><span class="o">*</span><span class="n">z</span> <span class="o">-</span> <span class="p">(</span><span class="n">mu</span><span class="o">/</span><span class="n">r23</span><span class="o">**</span><span class="mi">3</span><span class="p">)</span><span class="o">*</span><span class="n">z</span>
+
+    <span class="n">dstate</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">xdot</span><span class="p">,</span> <span class="n">ydot</span><span class="p">,</span> <span class="n">zdot</span><span class="p">,</span> <span class="n">xddot</span><span class="p">,</span> <span class="n">yddot</span><span class="p">,</span> <span class="n">zddot</span><span class="p">])</span>
+
+    <span class="k">if</span> <span class="n">eval_STM</span><span class="p">:</span> <span class="c1"># STM Calculations</span>
+        <span class="n">Phi_row</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="mi">6</span><span class="p">:]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">Phi_mat</span> <span class="o">=</span> <span class="n">Phi_row</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="mi">6</span><span class="p">,</span><span class="mi">6</span><span class="p">))</span>
+        <span class="n">A</span> <span class="o">=</span> <span class="n">cr3bp_jacobian</span><span class="p">(</span><span class="n">tau</span><span class="p">,</span> <span class="n">state</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">6</span><span class="p">],</span> <span class="n">mu</span><span class="p">)</span>
+        <span class="n">dPhi_mat</span> <span class="o">=</span> <span class="n">A</span> <span class="o">@</span> <span class="n">Phi_mat</span>
+        <span class="n">dPhi_row</span> <span class="o">=</span> <span class="n">dPhi_mat</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+
+        <span class="n">dstate_STM</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
+        <span class="n">dstate_STM</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span> <span class="mi">6</span><span class="p">]</span> <span class="o">=</span> <span class="n">dstate</span>
+        <span class="n">dstate_STM</span><span class="p">[</span><span class="mi">6</span><span class="p">:</span> <span class="p">]</span> <span class="o">=</span> <span class="n">dPhi_row</span>
+
+        <span class="k">return</span> <span class="n">dstate_STM</span>
+
+    <span class="k">return</span> <span class="n">dstate</span></div>
+
+<div class="viewcode-block" id="cr3bp_jacobian"><a class="viewcode-back" href="../../models.html#pyraa.models.cr3bp_jacobian">[docs]</a><span class="nd">@nb</span><span class="o">.</span><span class="n">njit</span><span class="p">(</span><span class="n">cache</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">cr3bp_jacobian</span><span class="p">(</span><span class="n">tau</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">mu</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; </span>
+<span class="sd">    cr3bp_jacobian - calculates the Jacobian matrix of CR3BP EOM</span>
+
+<span class="sd">    *Accelerated* with ``nb.njit(cache = True)``</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    tau: float</span>
+<span class="sd">        non-dim time</span>
+<span class="sd">    state: 1x6 array</span>
+<span class="sd">        state vector </span>
+<span class="sd">    mu: float</span>
+<span class="sd">        mass ratio of system</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    A: 6x6 array</span>
+<span class="sd">        evaluated Jacobian matrix</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># SC position in non-dim synodic frame</span>
+    <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">]</span>
+
+    <span class="c1"># Primary states</span>
+    <span class="n">p1_state</span><span class="p">,</span> <span class="n">p2_state</span> <span class="o">=</span> <span class="n">cr3bp_pstates</span><span class="p">(</span><span class="n">tau</span><span class="p">,</span> <span class="n">mu</span><span class="p">)</span>
+
+    <span class="c1"># Calculate primary distances</span>
+    <span class="n">r13</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">]</span> <span class="o">-</span> <span class="n">p1_state</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">])</span>
+    <span class="n">r23</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">]</span> <span class="o">-</span> <span class="n">p2_state</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">])</span>
+
+    <span class="n">Uxx</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">-</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">mu</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">/</span><span class="n">r13</span><span class="o">**</span><span class="mi">3</span> <span class="o">-</span> <span class="p">(</span><span class="mi">3</span><span class="o">*</span><span class="p">(</span><span class="n">x</span> <span class="o">+</span> <span class="n">mu</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">/</span><span class="n">r13</span><span class="o">**</span><span class="mi">5</span><span class="p">)</span> <span class="o">-</span> <span class="n">mu</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">/</span><span class="n">r23</span><span class="o">**</span><span class="mi">3</span> <span class="o">-</span> <span class="p">(</span><span class="mi">3</span><span class="o">*</span><span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">mu</span><span class="p">))</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">/</span><span class="n">r23</span><span class="o">**</span><span class="mi">5</span><span class="p">)</span>
+    <span class="n">Uyy</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">-</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">mu</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">/</span><span class="n">r13</span><span class="o">**</span><span class="mi">3</span> <span class="o">-</span> <span class="p">(</span><span class="mi">3</span><span class="o">*</span><span class="p">(</span><span class="n">y</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span><span class="o">/</span><span class="n">r13</span><span class="o">**</span><span class="mi">5</span><span class="p">)</span> <span class="o">-</span> <span class="n">mu</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">/</span><span class="n">r23</span><span class="o">**</span><span class="mi">3</span> <span class="o">-</span> <span class="p">(</span><span class="mi">3</span><span class="o">*</span><span class="p">(</span><span class="n">y</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span><span class="o">/</span><span class="n">r23</span><span class="o">**</span><span class="mi">5</span><span class="p">)</span>
+    <span class="n">Uzz</span> <span class="o">=</span> <span class="o">-</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">mu</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">/</span><span class="n">r13</span><span class="o">**</span><span class="mi">3</span> <span class="o">-</span> <span class="p">(</span><span class="mi">3</span><span class="o">*</span><span class="p">(</span><span class="n">y</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span><span class="o">/</span><span class="n">r13</span><span class="o">**</span><span class="mi">5</span><span class="p">)</span> <span class="o">-</span> <span class="n">mu</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">/</span><span class="n">r23</span><span class="o">**</span><span class="mi">3</span> <span class="o">-</span> <span class="p">(</span><span class="mi">3</span><span class="o">*</span><span class="p">(</span><span class="n">y</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span><span class="o">/</span><span class="n">r23</span><span class="o">**</span><span class="mi">5</span><span class="p">)</span>
+    <span class="n">Uxy</span> <span class="o">=</span> <span class="mi">3</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">mu</span><span class="p">)</span><span class="o">*</span><span class="n">y</span><span class="o">*</span><span class="p">(</span><span class="n">x</span> <span class="o">+</span> <span class="n">mu</span><span class="p">)</span><span class="o">/</span><span class="n">r13</span><span class="o">**</span><span class="mi">5</span> <span class="o">+</span> <span class="mi">3</span><span class="o">*</span><span class="n">mu</span><span class="o">*</span><span class="n">y</span><span class="o">*</span><span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">mu</span><span class="p">))</span><span class="o">/</span><span class="n">r23</span><span class="o">**</span><span class="mi">5</span>
+    <span class="n">Uxz</span> <span class="o">=</span> <span class="mi">3</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">mu</span><span class="p">)</span><span class="o">*</span><span class="n">z</span><span class="o">*</span><span class="p">(</span><span class="n">x</span> <span class="o">+</span> <span class="n">mu</span><span class="p">)</span><span class="o">/</span><span class="n">r13</span><span class="o">**</span><span class="mi">5</span> <span class="o">+</span> <span class="mi">3</span><span class="o">*</span><span class="n">mu</span><span class="o">*</span><span class="n">z</span><span class="o">*</span><span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">mu</span><span class="p">))</span><span class="o">/</span><span class="n">r23</span><span class="o">**</span><span class="mi">5</span>
+    <span class="n">Uyz</span> <span class="o">=</span> <span class="mi">3</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">mu</span><span class="p">)</span><span class="o">*</span><span class="n">y</span><span class="o">*</span><span class="n">z</span><span class="o">/</span><span class="n">r13</span><span class="o">**</span><span class="mi">5</span> <span class="o">+</span> <span class="mi">3</span><span class="o">*</span><span class="n">mu</span><span class="o">*</span><span class="n">y</span><span class="o">*</span><span class="n">z</span><span class="o">/</span><span class="n">r23</span><span class="o">**</span><span class="mi">5</span>
+
+    <span class="n">Uyx</span> <span class="o">=</span> <span class="n">Uxy</span>
+    <span class="n">Uzx</span> <span class="o">=</span> <span class="n">Uxz</span>
+    <span class="n">Uzy</span> <span class="o">=</span> <span class="n">Uyz</span>
+
+    <span class="n">Udd</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span>
+        <span class="p">[</span><span class="n">Uxx</span><span class="p">,</span> <span class="n">Uxy</span><span class="p">,</span> <span class="n">Uxz</span><span class="p">],</span>
+        <span class="p">[</span><span class="n">Uyx</span><span class="p">,</span> <span class="n">Uyy</span><span class="p">,</span> <span class="n">Uyz</span><span class="p">],</span>
+        <span class="p">[</span><span class="n">Uzx</span><span class="p">,</span> <span class="n">Uzy</span><span class="p">,</span> <span class="n">Uzz</span><span class="p">]</span>
+    <span class="p">])</span>
+    <span class="n">I3x3</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span>
+        <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+        <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+        <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
+    <span class="p">])</span>
+    <span class="n">O3x3</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">I3x3</span><span class="p">)</span>
+    <span class="n">twos3x3</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span>
+        <span class="p">[</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+        <span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+        <span class="p">[</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+    <span class="p">])</span>
+    <span class="n">top</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">O3x3</span><span class="p">,</span> <span class="n">I3x3</span><span class="p">),</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">bottom</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">Udd</span><span class="p">,</span> <span class="n">twos3x3</span><span class="p">),</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
+
+    <span class="c1"># 6x6 Jacobian</span>
+    <span class="n">A</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">top</span><span class="p">,</span> <span class="n">bottom</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">A</span></div>
+
+<div class="viewcode-block" id="cr3bp_JC"><a class="viewcode-back" href="../../models.html#pyraa.models.cr3bp_JC">[docs]</a><span class="nd">@nb</span><span class="o">.</span><span class="n">njit</span><span class="p">(</span><span class="n">cache</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">cr3bp_JC</span><span class="p">(</span><span class="n">tau</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">mu</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">e</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    cr3bp_JC - calculate Jacobi constant in cr3bp model</span>
+
+<span class="sd">    *Accelerated* with ``nb.njit(cache = True)``</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    tau: float</span>
+<span class="sd">        non-dim time</span>
+<span class="sd">    state: 1x6 array</span>
+<span class="sd">        state of sc</span>
+<span class="sd">    mu: float</span>
+<span class="sd">        mass ratio of system</span>
+<span class="sd">    e: float, optional</span>
+<span class="sd">        eccentricity of system, does **not** effect calculation in </span>
+<span class="sd">        CR3BP</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    JC: float</span>
+<span class="sd">        jacobi constant</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">]</span>
+    <span class="n">v</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="mi">3</span><span class="p">:</span><span class="mi">6</span><span class="p">])</span>
+    
+    <span class="n">p1_state</span><span class="p">,</span> <span class="n">p2_state</span> <span class="o">=</span> <span class="n">cr3bp_pstates</span><span class="p">(</span><span class="n">tau</span><span class="p">,</span> <span class="n">mu</span><span class="p">)</span>
+    <span class="n">r13</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">]</span> <span class="o">-</span> <span class="n">p1_state</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">])</span>
+    <span class="n">r23</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">]</span> <span class="o">-</span> <span class="n">p2_state</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">])</span>
+
+    <span class="n">U</span> <span class="o">=</span> <span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="n">x</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">y</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">mu</span><span class="p">)</span><span class="o">/</span><span class="n">r13</span> <span class="o">+</span> <span class="n">mu</span><span class="o">/</span><span class="n">r23</span>
+    
+    <span class="n">JC</span> <span class="o">=</span> <span class="mi">2</span><span class="o">*</span><span class="n">U</span> <span class="o">-</span> <span class="n">v</span><span class="o">**</span><span class="mi">2</span>
+
+    <span class="k">return</span> <span class="n">JC</span></div>
+
+<div class="viewcode-block" id="cr3bp_pstates"><a class="viewcode-back" href="../../models.html#pyraa.models.cr3bp_pstates">[docs]</a><span class="nd">@nb</span><span class="o">.</span><span class="n">njit</span><span class="p">(</span><span class="n">cache</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">cr3bp_pstates</span><span class="p">(</span><span class="n">tau</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">mu</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">e</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; </span>
+<span class="sd">    cr3bp_pstates - returns state vectors of the primaries in the synodic </span>
+<span class="sd">    frame of the CR3BP</span>
+
+<span class="sd">    *Accelerated* with ``nb.njit(cache = True)``</span>
+
+<span class="sd">    Parameters </span>
+<span class="sd">    ----------</span>
+<span class="sd">    tau: float</span>
+<span class="sd">        non-dim time</span>
+<span class="sd">    mu: float </span>
+<span class="sd">        mass ratio of system</span>
+<span class="sd">    e: float</span>
+<span class="sd">        eccentricity of system</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    p1_state : 1x6 array</span>
+<span class="sd">        state of p1</span>
+<span class="sd">    p2_state : 1x6 array</span>
+<span class="sd">        state of p2 </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">r1_</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span>   <span class="o">-</span><span class="n">mu</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+    <span class="n">r2_</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([(</span><span class="mi">1</span><span class="o">-</span><span class="n">mu</span><span class="p">),</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+    <span class="n">v1_</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+    <span class="n">v2_</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+
+    <span class="n">p1_state</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">r1_</span><span class="p">,</span> <span class="n">v1_</span><span class="p">))</span>
+    <span class="n">p2_state</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">r2_</span><span class="p">,</span> <span class="n">v2_</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">p1_state</span><span class="p">,</span> <span class="n">p2_state</span></div>
+
+
+<div class="viewcode-block" id="cr3bp_Lstates"><a class="viewcode-back" href="../../models.html#pyraa.models.cr3bp_Lstates">[docs]</a><span class="nd">@nb</span><span class="o">.</span><span class="n">jit</span><span class="p">(</span><span class="n">cache</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">cr3bp_Lstates</span><span class="p">(</span><span class="n">tau</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">mu</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">e</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    cr3bp_Lstates - calculates and returns array of Lagrange points in the cr3bp</span>
+
+<span class="sd">    In the CR3BP there are 3 collinear and 2 equilateral equilibrium points.</span>
+<span class="sd">    This function computes the state vector of L1-L5. </span>
+
+<span class="sd">    **Source of Implementation**</span>
+
+<span class="sd">    `Short 2010 Master&#39;s Thesis Purdue University </span>
+<span class="sd">    &lt;https://engineering.purdue.edu/people/kathleen.howell.1/Publications/masters/2010_Short.pdf&gt;`_</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    tau: float</span>
+<span class="sd">        non-dim time</span>
+<span class="sd">    mu: float</span>
+<span class="sd">        mass ratio of system</span>
+<span class="sd">    e: float</span>
+<span class="sd">        eccentricity of system</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    L_states: 5x6 array</span>
+<span class="sd">        states of Lpoints ordered 1-5</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="c1"># Sets signs of eq. function</span>
+    <span class="n">A1</span><span class="p">,</span> <span class="n">B1</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">+</span><span class="mi">1</span>
+    <span class="n">A2</span><span class="p">,</span> <span class="n">B2</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span>
+    <span class="n">A3</span><span class="p">,</span> <span class="n">B3</span> <span class="o">=</span> <span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="o">+</span><span class="mi">1</span>
+
+    <span class="n">xL1</span> <span class="o">=</span> <span class="n">sci_op</span><span class="o">.</span><span class="n">bisect</span><span class="p">(</span><span class="n">f</span> <span class="o">=</span> <span class="n">lpx_func</span><span class="p">,</span> <span class="n">a</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">b</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">mu</span> <span class="o">-</span> <span class="mf">1e-5</span><span class="p">,</span> <span class="n">args</span> <span class="o">=</span> <span class="p">(</span><span class="n">mu</span><span class="p">,</span> <span class="n">A1</span><span class="p">,</span> <span class="n">B1</span><span class="p">))</span>
+    <span class="n">xL2</span> <span class="o">=</span> <span class="n">sci_op</span><span class="o">.</span><span class="n">bisect</span><span class="p">(</span><span class="n">f</span> <span class="o">=</span> <span class="n">lpx_func</span><span class="p">,</span> <span class="n">a</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">mu</span> <span class="o">+</span> <span class="mf">1e-5</span><span class="p">,</span> <span class="n">b</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span> <span class="n">args</span> <span class="o">=</span> <span class="p">(</span><span class="n">mu</span><span class="p">,</span> <span class="n">A2</span><span class="p">,</span> <span class="n">B2</span><span class="p">))</span>
+    <span class="n">xL3</span> <span class="o">=</span> <span class="n">sci_op</span><span class="o">.</span><span class="n">bisect</span><span class="p">(</span><span class="n">f</span> <span class="o">=</span> <span class="n">lpx_func</span><span class="p">,</span> <span class="n">a</span> <span class="o">=</span> <span class="o">-</span><span class="mi">3</span><span class="p">,</span> <span class="n">b</span> <span class="o">=</span> <span class="o">-</span> <span class="n">mu</span> <span class="o">-</span> <span class="mf">1e-5</span><span class="p">,</span> <span class="n">args</span> <span class="o">=</span> <span class="p">(</span><span class="n">mu</span><span class="p">,</span> <span class="n">A3</span><span class="p">,</span> <span class="n">B3</span><span class="p">))</span>
+    
+    <span class="n">L1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">xL1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span> <span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+    <span class="n">L2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">xL2</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span> <span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+    <span class="n">L3</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">xL3</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span> <span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+    <span class="n">L4</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="o">/</span><span class="mi">2</span> <span class="o">-</span> <span class="n">mu</span><span class="p">,</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span> <span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+    <span class="n">L5</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="o">/</span><span class="mi">2</span> <span class="o">-</span> <span class="n">mu</span><span class="p">,</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span> <span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+    
+    <span class="n">L_states</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">((</span><span class="n">L1</span><span class="p">,</span> <span class="n">L2</span><span class="p">,</span> <span class="n">L3</span><span class="p">,</span> <span class="n">L4</span><span class="p">,</span> <span class="n">L5</span><span class="p">))</span>
+    
+    <span class="k">return</span> <span class="n">L_states</span></div>
+
+<div class="viewcode-block" id="cr3bp_transform"><a class="viewcode-back" href="../../models.html#pyraa.models.cr3bp_transform">[docs]</a><span class="nd">@nb</span><span class="o">.</span><span class="n">njit</span>
+<span class="k">def</span> <span class="nf">cr3bp_transform</span><span class="p">(</span><span class="n">tau</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">e</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    cr3bp_transform - computes transformation matrix from synodic to inertial frame</span>
+
+<span class="sd">    General rotation matrix aout the z-axis </span>
+
+<span class="sd">    *Accelerated* with ``nb.njit(cache = True)``</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    tau: float</span>
+<span class="sd">        epoch of transformation, this is equivalent to the true anomaly of the binary</span>
+<span class="sd">        bounded [0, 2pi)</span>
+<span class="sd">    e: float</span>
+<span class="sd">        eccentricity of system</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    Q: 6x6 array</span>
+<span class="sd">        evaluated rotation matrix Q(0, tau)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">cos</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">tau</span><span class="p">)</span>
+    <span class="n">sin</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">tau</span><span class="p">)</span>
+
+    <span class="n">q</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="n">cos</span><span class="p">,</span> <span class="o">-</span><span class="n">sin</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">],</span> <span class="p">[</span><span class="n">sin</span><span class="p">,</span>  <span class="n">cos</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">],</span>
+        <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span>    <span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">]</span>
+    <span class="p">],</span> <span class="n">dtype</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+
+    <span class="n">Q</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="n">qdot</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span>
+        <span class="p">[</span><span class="o">-</span><span class="n">sin</span><span class="p">,</span> <span class="o">-</span><span class="n">cos</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">],</span>
+        <span class="p">[</span><span class="n">cos</span><span class="p">,</span>  <span class="o">-</span><span class="n">sin</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">],</span>
+        <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span>    <span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">]</span>
+    <span class="p">],</span> <span class="n">dtype</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+    
+    <span class="n">O3x3</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
+
+    <span class="n">Qtop</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">q</span><span class="p">,</span> <span class="n">O3x3</span><span class="p">),</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">Qbot</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">qdot</span><span class="p">,</span> <span class="n">q</span><span class="p">),</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
+
+    <span class="n">Q</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">((</span><span class="n">Qtop</span><span class="p">,</span> <span class="n">Qbot</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">Q</span></div>
+
+
+
+<span class="c1">##########################################################</span>
+<span class="c1">##################### ER3BP Methods ######################</span>
+<span class="c1">##########################################################</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Methods used for ER3BP dynamical model</span>
+
+<span class="sd">Methods</span>
+<span class="sd">-------</span>
+<span class="sd">er3bp_eom - calculates state derivative using er3bp eom</span>
+<span class="sd">er3bp_jacobian - calculates jacobian matrix of er3bp EOM</span>
+<span class="sd">er3bp_JC - calculate Jacobi constant in er3bp model</span>
+<span class="sd">er3bp_pstates - calculates state of primaries in er3bp</span>
+<span class="sd">er3bp_Lstates - calculates and returns array of Lagrange points in the er3bp</span>
+<span class="sd">er3bp_transform - computes transformation matrix from synodic to inertial frame</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="er3bp_eom"><a class="viewcode-back" href="../../models.html#pyraa.models.er3bp_eom">[docs]</a><span class="nd">@nb</span><span class="o">.</span><span class="n">njit</span><span class="p">(</span><span class="n">cache</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">er3bp_eom</span><span class="p">(</span><span class="n">tau</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">mu</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">e</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">s</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">Js</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">eval_STM</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> 
+                <span class="n">p_event</span><span class="p">:</span> <span class="nb">tuple</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">epoch</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    er3bp_eom - calculates state derivative using ER3BP EOM</span>
+
+<span class="sd">    *Accelerated* with ``nb.njit(cache = True)``</span>
+
+<span class="sd">    Source: </span>
+<span class="sd">    `Hiday 1992 Purdue Univerity Dissertation </span>
+<span class="sd">    &lt;https://engineering.purdue.edu/people/kathleen.howell.1/Publications/dissertations/1992_Hiday.pdf&gt;`_</span>
+
+<span class="sd">    .. Note:: </span>
+<span class="sd">        ER3BP is a non-autonomous dynamical system, i.e. its EOM are a function </span>
+<span class="sd">        of state variables **and** time</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    tau: float</span>
+<span class="sd">        non-dim time</span>
+<span class="sd">    state: 1x6 array</span>
+<span class="sd">        non-dim state vector</span>
+<span class="sd">    mu: float</span>
+<span class="sd">        mass ratio of system</span>
+<span class="sd">    e: float</span>
+<span class="sd">        eccentricity of system</span>
+<span class="sd">    s: 1xN array of ints</span>
+<span class="sd">        pre-computed integer array for E anom</span>
+<span class="sd">    Js: 1xN array </span>
+<span class="sd">        pre-computed Bessel func of first kind for E anom</span>
+<span class="sd">    eval_STM: bool </span>
+<span class="sd">        if true, computes STM for integration</span>
+<span class="sd">    p_event: tuple </span>
+<span class="sd">        sets poincare event</span>
+<span class="sd">    epoch: bool</span>
+<span class="sd">        if true, calculates derivative of state w/ respect to epoch</span>
+<span class="sd">    </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    dstate: 1x6 array **or** 1x42 array, if ``eval_STM = True``</span>
+<span class="sd">        derivative of state array</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1">## Calculates Eccen. Anomaly using series expansion</span>
+    <span class="n">E</span> <span class="o">=</span> <span class="n">calc_E_series</span><span class="p">(</span><span class="n">tau</span><span class="p">,</span> <span class="n">e</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">Js</span><span class="p">)</span>
+
+    <span class="c1"># Calculate primary distances</span>
+    <span class="n">p1_state</span><span class="p">,</span> <span class="n">p2_state</span> <span class="o">=</span> <span class="n">er3bp_pstates</span><span class="p">(</span><span class="n">E</span><span class="p">,</span> <span class="n">mu</span><span class="p">,</span> <span class="n">e</span><span class="p">)</span>
+
+    <span class="c1"># Extract state variables</span>
+    <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span> <span class="mi">3</span><span class="p">]</span>
+    <span class="n">xdot</span><span class="p">,</span> <span class="n">ydot</span><span class="p">,</span> <span class="n">zdot</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="mi">3</span><span class="p">:</span><span class="mi">6</span><span class="p">]</span>
+    <span class="n">r_</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">]</span>
+    <span class="n">v_</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="mi">3</span><span class="p">:]</span>
+
+    <span class="n">x1</span> <span class="o">=</span> <span class="n">p1_state</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">x2</span> <span class="o">=</span> <span class="n">p2_state</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">r13</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">]</span> <span class="o">-</span> <span class="n">p1_state</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">])</span>
+    <span class="n">r23</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">]</span> <span class="o">-</span> <span class="n">p2_state</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">])</span>
+
+    <span class="c1"># compute inst. frame rotation and change in rotation</span>
+    <span class="n">n</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">e</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">e</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">E</span><span class="p">),</span> <span class="mi">2</span><span class="p">)</span>
+    <span class="n">ndot</span> <span class="o">=</span> <span class="o">-</span><span class="mi">2</span><span class="o">*</span><span class="n">e</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">e</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">E</span><span class="p">)</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">e</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">E</span><span class="p">),</span> <span class="mi">4</span><span class="p">)</span>
+
+    <span class="c1"># precompute distance cubed</span>
+    <span class="n">r13_cu</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="n">r13</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+    <span class="n">r23_cu</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="n">r23</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+
+    <span class="c1"># EOM calculations</span>
+    <span class="n">xddot</span> <span class="o">=</span>  <span class="mi">2</span><span class="o">*</span><span class="n">n</span><span class="o">*</span><span class="n">ydot</span> <span class="o">+</span> <span class="n">ndot</span><span class="o">*</span><span class="n">y</span> <span class="o">+</span> <span class="p">(</span><span class="n">n</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">*</span><span class="n">x</span> <span class="o">-</span> <span class="p">((</span><span class="mi">1</span><span class="o">-</span><span class="n">mu</span><span class="p">)</span><span class="o">/</span><span class="n">r13_cu</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="n">x1</span><span class="p">)</span> <span class="o">-</span> <span class="p">(</span><span class="n">mu</span><span class="o">/</span><span class="n">r23_cu</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="n">x2</span><span class="p">)</span>
+    <span class="n">yddot</span> <span class="o">=</span> <span class="o">-</span><span class="mi">2</span><span class="o">*</span><span class="n">n</span><span class="o">*</span><span class="n">xdot</span> <span class="o">-</span> <span class="n">ndot</span><span class="o">*</span><span class="n">x</span> <span class="o">+</span> <span class="p">(</span><span class="n">n</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">*</span><span class="n">y</span> <span class="o">-</span> <span class="p">((</span><span class="mi">1</span><span class="o">-</span><span class="n">mu</span><span class="p">)</span><span class="o">/</span><span class="n">r13_cu</span><span class="p">)</span><span class="o">*</span><span class="n">y</span> <span class="o">-</span> <span class="p">(</span><span class="n">mu</span><span class="o">/</span><span class="n">r23_cu</span><span class="p">)</span><span class="o">*</span><span class="n">y</span>
+    <span class="n">zddot</span> <span class="o">=</span> <span class="o">-</span><span class="p">((</span><span class="mi">1</span><span class="o">-</span><span class="n">mu</span><span class="p">)</span><span class="o">/</span><span class="n">r13_cu</span><span class="p">)</span><span class="o">*</span><span class="n">z</span> <span class="o">-</span> <span class="p">(</span><span class="n">mu</span><span class="o">/</span><span class="n">r23_cu</span><span class="p">)</span><span class="o">*</span><span class="n">z</span>
+    
+    <span class="n">dstate</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">xdot</span><span class="p">,</span> <span class="n">ydot</span><span class="p">,</span> <span class="n">zdot</span><span class="p">,</span> <span class="n">xddot</span><span class="p">,</span> <span class="n">yddot</span><span class="p">,</span> <span class="n">zddot</span><span class="p">])</span>
+
+    <span class="k">if</span> <span class="n">eval_STM</span><span class="p">:</span>
+        <span class="c1"># STM calculations</span>
+        <span class="n">Phi_row</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="mi">6</span><span class="p">:</span><span class="mi">42</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">Phi_mat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">Phi_row</span><span class="p">,</span> <span class="p">(</span><span class="mi">6</span><span class="p">,</span> <span class="mi">6</span><span class="p">))</span>
+        <span class="n">A</span> <span class="o">=</span> <span class="n">er3bp_jacobian</span><span class="p">(</span><span class="n">E</span><span class="p">,</span> <span class="n">state</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">6</span><span class="p">],</span> <span class="n">p1_state</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">],</span> <span class="n">p2_state</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">],</span> <span class="n">mu</span><span class="p">,</span> <span class="n">e</span><span class="p">)</span>
+        <span class="n">dPhi_mat</span> <span class="o">=</span> <span class="n">A</span> <span class="o">@</span> <span class="n">Phi_mat</span>
+        <span class="n">dPhi_row</span> <span class="o">=</span> <span class="n">dPhi_mat</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+        <span class="n">dstate_STM</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
+        <span class="n">dstate_STM</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span> <span class="mi">6</span><span class="p">]</span> <span class="o">=</span> <span class="n">dstate</span>
+        <span class="n">dstate_STM</span><span class="p">[</span><span class="mi">6</span><span class="p">:</span> <span class="p">]</span> <span class="o">=</span> <span class="n">dPhi_row</span>
+
+        <span class="k">return</span> <span class="n">dstate_STM</span>
+
+    <span class="k">return</span> <span class="n">dstate</span></div>
+
+
+<div class="viewcode-block" id="er3bp_jacobian"><a class="viewcode-back" href="../../models.html#pyraa.models.er3bp_jacobian">[docs]</a><span class="nd">@nb</span><span class="o">.</span><span class="n">njit</span><span class="p">(</span><span class="n">cache</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">er3bp_jacobian</span><span class="p">(</span><span class="n">E</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">r1_</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">r2_</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">mu</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">e</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    er3bp_jacobian - calculates Jacobian matrix of ER3BP EOM</span>
+
+<span class="sd">    *Accelerated* with ``nb.njit(cache = True)``</span>
+
+<span class="sd">    Source: </span>
+<span class="sd">    `Hiday 1992 Purdue Univerity Dissertation </span>
+<span class="sd">    &lt;https://engineering.purdue.edu/people/kathleen.howell.1/Publications/dissertations/1992_Hiday.pdf&gt;`_</span>
+
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    E: float</span>
+<span class="sd">        eccentric anomaly of binary</span>
+<span class="sd">    state: 1x6 array </span>
+<span class="sd">        state vector</span>
+<span class="sd">    r1_: 1x3 array</span>
+<span class="sd">        position of p1</span>
+<span class="sd">    r2_: 1x3 array</span>
+<span class="sd">        position of p2</span>
+<span class="sd">    mu: float</span>
+<span class="sd">        mass ratio of system</span>
+<span class="sd">    e: float</span>
+<span class="sd">        eccentricity of system</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    A: 6x6 array</span>
+<span class="sd">        evaluated Jacobian matrix</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="n">r1</span> <span class="o">=</span> <span class="n">r1_</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">r2</span> <span class="o">=</span> <span class="n">r1_</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">r13</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">]</span> <span class="o">-</span> <span class="n">r1_</span><span class="p">)</span>
+    <span class="n">r23</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">]</span> <span class="o">-</span> <span class="n">r2_</span><span class="p">)</span>
+    
+    <span class="n">n</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">e</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">e</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">E</span><span class="p">),</span> <span class="mi">2</span><span class="p">)</span>
+    <span class="n">ndot</span> <span class="o">=</span> <span class="o">-</span><span class="mi">2</span><span class="o">*</span><span class="n">e</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">e</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">E</span><span class="p">)</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">e</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">E</span><span class="p">),</span> <span class="mi">4</span><span class="p">)</span>
+    <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">]</span>
+
+    <span class="c1"># Partials</span>
+    <span class="n">Uxx</span> <span class="o">=</span> <span class="n">n</span><span class="o">**</span><span class="mi">2</span> <span class="o">-</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">mu</span><span class="p">)</span><span class="o">/</span><span class="n">r13</span><span class="o">**</span><span class="mi">3</span> <span class="o">-</span> <span class="n">mu</span><span class="o">/</span><span class="n">r23</span><span class="o">**</span><span class="mi">3</span> <span class="o">+</span> <span class="p">(</span><span class="mi">3</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">mu</span><span class="p">)</span><span class="o">/</span><span class="n">r13</span><span class="o">**</span><span class="mi">5</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="n">r1</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="p">(</span><span class="mi">3</span><span class="o">*</span><span class="n">mu</span><span class="o">/</span><span class="n">r23</span><span class="o">**</span><span class="mi">5</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="n">r2</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span>
+    <span class="n">Uyy</span> <span class="o">=</span> <span class="n">n</span><span class="o">**</span><span class="mi">2</span> <span class="o">-</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">mu</span><span class="p">)</span><span class="o">/</span><span class="n">r13</span><span class="o">**</span><span class="mi">3</span> <span class="o">-</span> <span class="n">mu</span><span class="o">/</span><span class="n">r23</span><span class="o">**</span><span class="mi">3</span> <span class="o">+</span> <span class="p">(</span><span class="mi">3</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">mu</span><span class="p">)</span><span class="o">/</span><span class="n">r13</span><span class="o">**</span><span class="mi">5</span><span class="p">)</span><span class="o">*</span><span class="n">y</span><span class="o">**</span><span class="mi">2</span>               <span class="o">+</span> <span class="p">(</span><span class="mi">3</span><span class="o">*</span><span class="n">mu</span><span class="o">/</span><span class="n">r23</span><span class="o">**</span><span class="mi">5</span><span class="p">)</span><span class="o">*</span><span class="n">y</span><span class="o">**</span><span class="mi">2</span>
+    <span class="n">Uzz</span> <span class="o">=</span> <span class="mi">0</span>    <span class="o">-</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">mu</span><span class="p">)</span><span class="o">/</span><span class="n">r13</span><span class="o">**</span><span class="mi">3</span> <span class="o">-</span> <span class="n">mu</span><span class="o">/</span><span class="n">r23</span><span class="o">**</span><span class="mi">3</span> <span class="o">+</span> <span class="p">(</span><span class="mi">3</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">mu</span><span class="p">)</span><span class="o">/</span><span class="n">r13</span><span class="o">**</span><span class="mi">5</span><span class="p">)</span><span class="o">*</span><span class="n">z</span><span class="o">**</span><span class="mi">2</span>               <span class="o">+</span> <span class="p">(</span><span class="mi">3</span><span class="o">*</span><span class="n">mu</span><span class="o">/</span><span class="n">r23</span><span class="o">**</span><span class="mi">5</span><span class="p">)</span><span class="o">*</span><span class="n">z</span><span class="o">**</span><span class="mi">2</span>
+    <span class="n">Uxy</span> <span class="o">=</span> <span class="p">(</span><span class="mi">3</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">mu</span><span class="p">)</span><span class="o">/</span><span class="n">r13</span><span class="o">**</span><span class="mi">5</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="n">r1</span><span class="p">)</span><span class="o">*</span><span class="n">y</span> <span class="o">+</span> <span class="p">(</span><span class="mi">3</span><span class="o">*</span><span class="n">mu</span><span class="o">/</span><span class="n">r23</span><span class="o">**</span><span class="mi">5</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="n">r2</span><span class="p">)</span><span class="o">*</span><span class="n">y</span>
+    <span class="n">Uxz</span> <span class="o">=</span> <span class="p">(</span><span class="mi">3</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">mu</span><span class="p">)</span><span class="o">/</span><span class="n">r13</span><span class="o">**</span><span class="mi">5</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="n">r1</span><span class="p">)</span><span class="o">*</span><span class="n">z</span> <span class="o">+</span> <span class="p">(</span><span class="mi">3</span><span class="o">*</span><span class="n">mu</span><span class="o">/</span><span class="n">r23</span><span class="o">**</span><span class="mi">5</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="n">r2</span><span class="p">)</span><span class="o">*</span><span class="n">z</span>
+    <span class="n">Uyz</span> <span class="o">=</span> <span class="p">(</span><span class="mi">3</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">mu</span><span class="p">)</span><span class="o">/</span><span class="n">r13</span><span class="o">**</span><span class="mi">3</span><span class="p">)</span><span class="o">*</span><span class="n">y</span><span class="o">*</span><span class="n">z</span>               <span class="o">+</span> <span class="p">(</span><span class="mi">3</span><span class="o">*</span><span class="n">mu</span><span class="o">/</span><span class="n">r23</span><span class="o">**</span><span class="mi">3</span><span class="p">)</span><span class="o">*</span><span class="n">y</span><span class="o">*</span><span class="n">z</span>
+    <span class="n">Uyx</span> <span class="o">=</span> <span class="n">Uxy</span>
+    <span class="n">Uzx</span> <span class="o">=</span> <span class="n">Uxz</span>
+    <span class="n">Uzy</span> <span class="o">=</span> <span class="n">Uyz</span>
+
+    <span class="n">Udd</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span>
+        <span class="p">[</span><span class="n">Uxx</span><span class="p">,</span> <span class="n">Uxy</span><span class="p">,</span> <span class="n">Uxz</span><span class="p">],</span>
+        <span class="p">[</span><span class="n">Uyx</span><span class="p">,</span> <span class="n">Uyy</span><span class="p">,</span> <span class="n">Uyz</span><span class="p">],</span>
+        <span class="p">[</span><span class="n">Uzx</span><span class="p">,</span> <span class="n">Uzy</span><span class="p">,</span> <span class="n">Uzz</span><span class="p">]</span>
+    <span class="p">])</span>
+    <span class="n">I3x3</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span>
+        <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+        <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+        <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
+    <span class="p">])</span>
+    <span class="n">O3x3</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">I3x3</span><span class="p">)</span>
+    <span class="n">Rho3x3</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span>
+        <span class="p">[</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+        <span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+        <span class="p">[</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+    <span class="p">])</span>
+
+    <span class="n">top</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">O3x3</span><span class="p">,</span> <span class="n">I3x3</span><span class="p">),</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">bottom</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">Udd</span> <span class="o">+</span> <span class="n">ndot</span><span class="o">*</span><span class="n">Rho3x3</span><span class="p">,</span> <span class="n">n</span><span class="o">*</span><span class="n">Rho3x3</span><span class="p">),</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
+
+    <span class="n">A</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">top</span><span class="p">,</span> <span class="n">bottom</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">A</span></div>
+
+<div class="viewcode-block" id="er3bp_pstates"><a class="viewcode-back" href="../../models.html#pyraa.models.er3bp_pstates">[docs]</a><span class="nd">@nb</span><span class="o">.</span><span class="n">njit</span><span class="p">(</span><span class="n">cache</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">er3bp_pstates</span><span class="p">(</span><span class="n">E</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">mu</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">e</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    er3bp_pstates - calculates state of primaries in ER3BP</span>
+
+<span class="sd">    *Accelerated* with ``nb.njit(cache = True)``</span>
+
+<span class="sd">    Source</span>
+
+<span class="sd">    `Hiday 1992 Purdue Univerity Dissertation </span>
+<span class="sd">    &lt;https://engineering.purdue.edu/people/kathleen.howell.1/Publications/dissertations/1992_Hiday.pdf&gt;`_</span>
+
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    E: float</span>
+<span class="sd">        eccentric anomaly</span>
+<span class="sd">    mu: float</span>
+<span class="sd">        mass ratio of system</span>
+<span class="sd">    e: float</span>
+<span class="sd">        eccentricity</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    --------</span>
+<span class="sd">    p1_state: 1x6 array</span>
+<span class="sd">        state of p1</span>
+<span class="sd">    p2_state: 1x6 array</span>
+<span class="sd">        state of p2 </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># distance from barycenter from orbit eq</span>
+    <span class="n">x1</span> <span class="o">=</span> <span class="o">-</span><span class="n">mu</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">e</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">E</span><span class="p">))</span> 
+    <span class="n">x2</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">mu</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">e</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">E</span><span class="p">))</span> 
+    <span class="n">r12</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">x2</span><span class="o">-</span><span class="n">x1</span><span class="p">)</span>
+    
+    <span class="n">Edot</span> <span class="o">=</span> <span class="mi">1</span><span class="o">/</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">e</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">E</span><span class="p">))</span>
+    
+    <span class="n">xdot1</span> <span class="o">=</span> <span class="o">-</span><span class="n">mu</span><span class="o">*</span><span class="n">e</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">E</span><span class="p">)</span><span class="o">*</span><span class="n">Edot</span>
+    <span class="n">xdot2</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">mu</span><span class="p">)</span><span class="o">*</span><span class="n">e</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">E</span><span class="p">)</span><span class="o">*</span><span class="n">Edot</span>
+    
+    <span class="n">p1_state</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">x1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">xdot1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+    <span class="n">p2_state</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">x2</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">xdot2</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+    
+    <span class="k">return</span> <span class="n">p1_state</span><span class="p">,</span> <span class="n">p2_state</span></div>
+
+<div class="viewcode-block" id="er3bp_Lstates"><a class="viewcode-back" href="../../models.html#pyraa.models.er3bp_Lstates">[docs]</a><span class="k">def</span> <span class="nf">er3bp_Lstates</span><span class="p">(</span><span class="n">E</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">mu</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">e</span><span class="p">:</span><span class="nb">float</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    er3bp_Lstates - calculates and returns array of Lagrange points in the ER3BP</span>
+
+<span class="sd">    .. Note::</span>
+<span class="sd">        In the ER3BP there are 3 instantaneous collinear equilibrium points and 2 static</span>
+<span class="sd">        equilateral equilibrium points</span>
+
+<span class="sd">    Sources</span>
+
+<span class="sd">    `Hiday 1992 Purdue Univerity Dissertation </span>
+<span class="sd">    &lt;https://engineering.purdue.edu/people/kathleen.howell.1/Publications/dissertations/1992_Hiday.pdf&gt;`_</span>
+
+<span class="sd">    `Short 2010 Master&#39;s Thesis Purdue University </span>
+<span class="sd">    &lt;https://engineering.purdue.edu/people/kathleen.howell.1/Publications/masters/2010_Short.pdf&gt;`_</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    E: float</span>
+<span class="sd">        eccentric anomaly</span>
+<span class="sd">    mu: float</span>
+<span class="sd">        mass ratio of system</span>
+<span class="sd">    e: float</span>
+<span class="sd">        eccen. of system</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    L_states: 5x6 array</span>
+<span class="sd">        states of Lpoints ordered 1-5</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="n">A1</span><span class="p">,</span> <span class="n">B1</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">+</span><span class="mi">1</span>
+    <span class="n">A2</span><span class="p">,</span> <span class="n">B2</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span>
+    <span class="n">A3</span><span class="p">,</span> <span class="n">B3</span> <span class="o">=</span> <span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="o">+</span><span class="mi">1</span>
+
+    <span class="n">xL1</span> <span class="o">=</span> <span class="n">sci_op</span><span class="o">.</span><span class="n">bisect</span><span class="p">(</span><span class="n">f</span> <span class="o">=</span> <span class="n">lpx_func</span><span class="p">,</span> <span class="n">a</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">b</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">mu</span> <span class="o">-</span> <span class="mf">1e-5</span><span class="p">,</span> <span class="n">args</span> <span class="o">=</span> <span class="p">(</span><span class="n">mu</span><span class="p">,</span> <span class="n">A1</span><span class="p">,</span> <span class="n">B1</span><span class="p">))</span>
+    <span class="n">xL2</span> <span class="o">=</span> <span class="n">sci_op</span><span class="o">.</span><span class="n">bisect</span><span class="p">(</span><span class="n">f</span> <span class="o">=</span> <span class="n">lpx_func</span><span class="p">,</span> <span class="n">a</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">mu</span> <span class="o">+</span> <span class="mf">1e-5</span><span class="p">,</span> <span class="n">b</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span> <span class="n">args</span> <span class="o">=</span> <span class="p">(</span><span class="n">mu</span><span class="p">,</span> <span class="n">A2</span><span class="p">,</span> <span class="n">B2</span><span class="p">))</span>
+    <span class="n">xL3</span> <span class="o">=</span> <span class="n">sci_op</span><span class="o">.</span><span class="n">bisect</span><span class="p">(</span><span class="n">f</span> <span class="o">=</span> <span class="n">lpx_func</span><span class="p">,</span> <span class="n">a</span> <span class="o">=</span> <span class="o">-</span><span class="mi">3</span><span class="p">,</span> <span class="n">b</span> <span class="o">=</span> <span class="o">-</span> <span class="n">mu</span> <span class="o">-</span> <span class="mf">1e-5</span><span class="p">,</span> <span class="n">args</span> <span class="o">=</span> <span class="p">(</span><span class="n">mu</span><span class="p">,</span> <span class="n">A3</span><span class="p">,</span> <span class="n">B3</span><span class="p">))</span>
+
+    <span class="n">R</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">e</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">E</span><span class="p">)</span>
+
+    <span class="n">Edot</span> <span class="o">=</span> <span class="mi">1</span><span class="o">/</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">e</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">E</span><span class="p">))</span>
+    <span class="n">Rdot</span> <span class="o">=</span> <span class="o">-</span><span class="n">mu</span><span class="o">*</span><span class="n">e</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">E</span><span class="p">)</span><span class="o">*</span><span class="n">Edot</span>
+    
+    <span class="n">L1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">R</span><span class="o">*</span><span class="n">xL1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">Rdot</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+    <span class="n">L2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">R</span><span class="o">*</span><span class="n">xL2</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">Rdot</span> <span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+    <span class="n">L3</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">R</span><span class="o">*</span><span class="n">xL3</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">Rdot</span> <span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+    <span class="n">L4</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="o">/</span><span class="mi">2</span> <span class="o">-</span> <span class="n">mu</span><span class="p">,</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span> <span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+    <span class="n">L5</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="o">/</span><span class="mi">2</span> <span class="o">-</span> <span class="n">mu</span><span class="p">,</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span> <span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+    
+    <span class="n">L_states</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">((</span><span class="n">L1</span><span class="p">,</span> <span class="n">L2</span><span class="p">,</span> <span class="n">L3</span><span class="p">,</span> <span class="n">L4</span><span class="p">,</span> <span class="n">L5</span><span class="p">))</span>
+    
+    <span class="k">return</span> <span class="n">L_states</span></div>
+
+
+<div class="viewcode-block" id="er3bp_JC"><a class="viewcode-back" href="../../models.html#pyraa.models.er3bp_JC">[docs]</a><span class="k">def</span> <span class="nf">er3bp_JC</span><span class="p">(</span><span class="n">tau</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">mu</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">e</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    er3bp_JC - calculate Jacobi constant in ER3BP model</span>
+<span class="sd">    </span>
+<span class="sd">    .. Note::</span>
+<span class="sd">        The Jacobi constant is an integral of motion in the CR3BP</span>
+<span class="sd">        The ER3BP does not possess a constant of integration from the </span>
+<span class="sd">        equations of motion. Nonetheless, it can be informative to compute </span>
+<span class="sd">        a particle&#39;s JC over a trajectory</span>
+
+<span class="sd">    Source: Hiday 1992 Purdue Univerity Dissertation</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    tau: float</span>
+<span class="sd">        non-dim time</span>
+<span class="sd">    state: 1x6 array</span>
+<span class="sd">        state vector</span>
+<span class="sd">    mu: float</span>
+<span class="sd">        mass ratio of system</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    JC: float</span>
+<span class="sd">        Jacobi constant</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">]</span>
+    <span class="n">v</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="mi">3</span><span class="p">:</span><span class="mi">6</span><span class="p">])</span>
+    
+    <span class="n">p1_state</span><span class="p">,</span> <span class="n">p2_state</span> <span class="o">=</span> <span class="n">er3bp_pstates</span><span class="p">(</span><span class="n">tau</span><span class="p">,</span> <span class="n">mu</span><span class="p">,</span> <span class="n">e</span><span class="p">)</span>
+    <span class="n">r13</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">]</span> <span class="o">-</span> <span class="n">p1_state</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">])</span>
+    <span class="n">r23</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">]</span> <span class="o">-</span> <span class="n">p2_state</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">])</span>
+
+    <span class="n">U</span> <span class="o">=</span> <span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="n">x</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">y</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">mu</span><span class="p">)</span><span class="o">/</span><span class="n">r13</span> <span class="o">+</span> <span class="n">mu</span><span class="o">/</span><span class="n">r23</span>
+    
+    <span class="n">JC</span> <span class="o">=</span> <span class="mi">2</span><span class="o">*</span><span class="n">U</span> <span class="o">-</span> <span class="n">v</span><span class="o">**</span><span class="mi">2</span>
+
+    <span class="k">return</span> <span class="n">JC</span></div>
+
+<div class="viewcode-block" id="er3bp_transform"><a class="viewcode-back" href="../../models.html#pyraa.models.er3bp_transform">[docs]</a><span class="k">def</span> <span class="nf">er3bp_transform</span><span class="p">(</span><span class="n">tau</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">e</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    er3bp_transform - computes transformation matrix from synodic to inertial frame</span>
+
+<span class="sd">    General rotation matrix about z axis</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    tau: float</span>
+<span class="sd">        epoch of transformation, this is equivalent to the true anomaly of the binary</span>
+<span class="sd">        bounded [0, 2pi)</span>
+<span class="sd">    e: float</span>
+<span class="sd">        eccentricity of system</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    Q: array</span>
+<span class="sd">        evaluated 6x6 rotation matrix Q(0, theta)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">E</span> <span class="o">=</span> <span class="n">calc_ecc_anom</span><span class="p">(</span><span class="n">tau</span><span class="p">,</span> <span class="n">e</span><span class="p">)</span>
+    <span class="c1"># true anomaly is angle between barycenter and radial line</span>
+    <span class="n">f</span> <span class="o">=</span> <span class="n">calc_f_anom</span><span class="p">(</span><span class="n">E</span><span class="p">,</span> <span class="n">e</span><span class="p">)</span> 
+
+    <span class="n">cos</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+    <span class="n">sin</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+    <span class="n">q</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span>
+        <span class="p">[</span><span class="n">cos</span><span class="p">,</span> <span class="o">-</span><span class="n">sin</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+        <span class="p">[</span><span class="n">sin</span><span class="p">,</span>  <span class="n">cos</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+        <span class="p">[</span>  <span class="mi">0</span><span class="p">,</span>    <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
+    <span class="p">])</span>
+    <span class="n">qdot</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span>
+        <span class="p">[</span><span class="o">-</span><span class="n">sin</span><span class="p">,</span> <span class="o">-</span><span class="n">cos</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+        <span class="p">[</span><span class="n">cos</span><span class="p">,</span>  <span class="o">-</span><span class="n">sin</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+        <span class="p">[</span>  <span class="mi">0</span><span class="p">,</span>    <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
+    <span class="p">])</span>
+    <span class="n">O3x3</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span>
+        <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+        <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+        <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+    <span class="p">])</span>
+
+    <span class="n">Qtop</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">q</span><span class="p">,</span> <span class="n">O3x3</span><span class="p">),</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">Qbot</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">qdot</span><span class="p">,</span> <span class="n">q</span><span class="p">),</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
+
+    <span class="n">Q</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">((</span><span class="n">Qtop</span><span class="p">,</span> <span class="n">Qbot</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">Q</span></div>
+<span class="c1">##########################################################</span>
+<span class="c1">##################### BCR4BP Methods ######################</span>
+<span class="c1">##########################################################</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Methods used for BCR4BP dynamical model</span>
+
+<span class="sd">!!!!!!! This model is under development  !!!!!!</span>
+
+<span class="sd">Methods</span>
+<span class="sd">-------</span>
+<span class="sd">bcr4bp_eom - calculates state derivative using bcr4bp eom</span>
+<span class="sd">bcr4bp_jacobian - calculates jacobian matrix of er3bp EOM</span>
+<span class="sd">bcr4bp_JC - calculate Jacobi constant in er3bp model</span>
+<span class="sd">bcr4bp_pstates - calculates state of primaries in er3bp</span>
+<span class="sd">bcr4bp_Lstates - calculates and returns array of Lagrange points in the er3bp</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+
+<span class="k">def</span> <span class="nf">bcr4bp_eom</span><span class="p">(</span><span class="n">tau</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">mu</span><span class="p">,</span> <span class="n">e</span><span class="p">,</span> <span class="n">eval_STM</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">p_event</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">epoch</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+
+    <span class="n">m_s</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">char_dict</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">dynamics</span><span class="p">][</span><span class="s1">&#39;m_s&#39;</span><span class="p">]</span> 
+    <span class="n">t_sun</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">char_dict</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">dynamics</span><span class="p">][</span><span class="s1">&#39;t_sun&#39;</span><span class="p">]</span>
+    <span class="n">a_s</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">char_dict</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">dynamics</span><span class="p">][</span><span class="s1">&#39;a_s&#39;</span><span class="p">]</span>
+    <span class="n">e_state</span><span class="p">,</span> <span class="n">m_state</span><span class="p">,</span> <span class="n">s_state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bcr4bp_pstates</span><span class="p">(</span><span class="n">tau</span><span class="p">)</span>
+
+    <span class="c1"># Extract non-dim var for readability in eq. of motion</span>
+    <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">xdot</span><span class="p">,</span> <span class="n">ydot</span><span class="p">,</span> <span class="n">zdot</span> <span class="o">=</span> <span class="n">s</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">6</span><span class="p">]</span>
+
+    <span class="c1"># Calculate relative position vector form sc to m1/m2</span>
+    <span class="n">r14</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">s</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">]</span> <span class="o">-</span> <span class="n">e_state</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">])</span>
+    <span class="n">r24</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">s</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">]</span> <span class="o">-</span> <span class="n">m_state</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">])</span>
+    <span class="n">r34</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">s</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">]</span> <span class="o">-</span> <span class="n">s_state</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">])</span>
+
+    <span class="c1"># CR3BP non-dim equations of motion</span>
+    <span class="n">xddot</span> <span class="o">=</span> <span class="mi">2</span><span class="o">*</span><span class="n">ydot</span> <span class="o">+</span> <span class="n">x</span> <span class="o">-</span> <span class="p">((</span><span class="mi">1</span><span class="o">-</span><span class="n">mu</span><span class="p">)</span><span class="o">/</span><span class="n">r14</span><span class="o">**</span><span class="mi">3</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">x</span> <span class="o">+</span> <span class="n">mu</span><span class="p">)</span> <span class="o">-</span> <span class="p">(</span><span class="n">mu</span><span class="o">/</span><span class="n">r24</span><span class="o">**</span><span class="mi">3</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">mu</span><span class="p">))</span> <span class="o">-</span> \
+        <span class="p">(</span><span class="n">m_s</span><span class="o">/</span><span class="n">r34</span><span class="o">**</span><span class="mi">3</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="n">a_s</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">tau</span><span class="o">/</span><span class="n">t_sun</span><span class="p">))</span> <span class="o">-</span> <span class="p">(</span><span class="n">m_s</span><span class="o">/</span><span class="n">a_s</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">tau</span><span class="o">/</span><span class="n">t_sun</span><span class="p">)</span>
+
+    <span class="n">yddot</span> <span class="o">=</span> <span class="o">-</span><span class="mi">2</span><span class="o">*</span><span class="n">xdot</span> <span class="o">+</span> <span class="n">y</span> <span class="o">-</span> <span class="p">((</span><span class="mi">1</span><span class="o">-</span><span class="n">mu</span><span class="p">)</span><span class="o">/</span><span class="n">r14</span><span class="o">**</span><span class="mi">3</span><span class="p">)</span><span class="o">*</span><span class="n">y</span> <span class="o">-</span> <span class="p">(</span><span class="n">mu</span><span class="o">/</span><span class="n">r24</span><span class="o">**</span><span class="mi">3</span><span class="p">)</span><span class="o">*</span><span class="n">y</span> <span class="o">-</span> \
+        <span class="p">(</span><span class="n">m_s</span><span class="o">/</span><span class="n">r34</span><span class="o">**</span><span class="mi">3</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="n">a_s</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">tau</span><span class="o">/</span><span class="n">t_sun</span><span class="p">))</span> <span class="o">-</span> <span class="p">(</span><span class="n">m_s</span><span class="o">/</span><span class="n">a_s</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">tau</span><span class="o">/</span><span class="n">t_sun</span><span class="p">)</span>
+
+    <span class="n">zddot</span> <span class="o">=</span> <span class="o">-</span> <span class="p">((</span><span class="mi">1</span><span class="o">-</span><span class="n">mu</span><span class="p">)</span><span class="o">/</span><span class="n">r14</span><span class="o">**</span><span class="mi">3</span><span class="p">)</span><span class="o">*</span><span class="n">z</span> <span class="o">-</span> <span class="p">(</span><span class="n">mu</span><span class="o">/</span><span class="n">r24</span><span class="o">**</span><span class="mi">3</span><span class="p">)</span><span class="o">*</span><span class="n">z</span> <span class="o">-</span> <span class="p">(</span><span class="n">m_s</span><span class="o">/</span><span class="n">r34</span><span class="o">**</span><span class="mi">3</span><span class="p">)</span><span class="o">*</span><span class="n">z</span>
+
+    <span class="n">ds</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">xdot</span><span class="p">,</span> <span class="n">ydot</span><span class="p">,</span> <span class="n">zdot</span><span class="p">,</span> <span class="n">xddot</span><span class="p">,</span> <span class="n">yddot</span><span class="p">,</span> <span class="n">zddot</span><span class="p">])</span>
+
+    <span class="k">return</span> <span class="n">ds</span>
+
+<span class="k">def</span> <span class="nf">bcr4bp_pstates</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tau</span><span class="p">):</span>
+
+    <span class="n">mu</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">char_dict</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">dynamics</span><span class="p">][</span><span class="s1">&#39;mu&#39;</span><span class="p">]</span>
+    <span class="n">a_s</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">char_dict</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">dynamics</span><span class="p">][</span><span class="s1">&#39;a_s&#39;</span><span class="p">]</span>
+    <span class="n">t_sun</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">char_dict</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">dynamics</span><span class="p">][</span><span class="s1">&#39;t_sun&#39;</span><span class="p">]</span>
+
+    <span class="n">r1_</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span>   <span class="o">-</span><span class="n">mu</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+    <span class="n">r2_</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([(</span><span class="mi">1</span><span class="o">-</span><span class="n">mu</span><span class="p">),</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+    <span class="n">r3_</span> <span class="o">=</span> <span class="n">a_s</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">tau</span><span class="o">/</span><span class="n">t_sun</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">tau</span><span class="o">/</span><span class="n">t_sun</span><span class="p">),</span> <span class="mi">0</span><span class="p">])</span>
+    <span class="n">v1_</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+    <span class="n">v2_</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+    <span class="n">v3_</span> <span class="o">=</span> <span class="n">a_s</span><span class="o">/</span><span class="n">t_sun</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">tau</span><span class="o">/</span><span class="n">t_sun</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">tau</span><span class="o">/</span><span class="n">t_sun</span><span class="p">),</span> <span class="mi">0</span><span class="p">])</span> <span class="c1"># maybe not correct..</span>
+
+    <span class="n">e_state</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">r1_</span><span class="p">,</span> <span class="n">v1_</span><span class="p">))</span>
+    <span class="n">m_state</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">r2_</span><span class="p">,</span> <span class="n">v2_</span><span class="p">))</span>
+    <span class="n">s_state</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">r3_</span><span class="p">,</span> <span class="n">v3_</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">e_state</span><span class="p">,</span> <span class="n">m_state</span><span class="p">,</span> <span class="n">s_state</span>
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+
+
+    <span class="n">create_system</span><span class="p">(</span><span class="s1">&#39;Mun&#39;</span><span class="p">,</span> <span class="n">mu</span> <span class="o">=</span> <span class="mf">0.5</span><span class="p">)</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Drew Langford.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

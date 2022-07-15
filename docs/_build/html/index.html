@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="English" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PyRAA Python Restricted Astronomy and Astrodynamics &mdash; PyRAA 0.1 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PyRAA Tutorials" href="tutorials.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="#" class="icon icon-home"> PyRAA
+            <img src="_static/pyraa_logo.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="tutorials.html">PyRAA Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="acknowldegments.html">PyRAA Acknowlegements</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="#">PyRAA</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="#" class="icon icon-home"></a> &raquo;</li>
+      <li>PyRAA <br /> Python Restricted Astronomy and Astrodynamics</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/index.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<section id="pyraa-br-python-restricted-astronomy-and-astrodynamics">
+<h1>PyRAA <br /> Python Restricted Astronomy and Astrodynamics<a class="headerlink" href="#pyraa-br-python-restricted-astronomy-and-astrodynamics" title="Permalink to this heading"></a></h1>
+<p><strong>Open-source Python package for dynamical systems analysis of restricted multi-body models</strong></p>
+<p>Thanks for checking out <code class="docutils literal notranslate"><span class="pre">PyRAA</span></code>! The Python Restricted Astronomy and Astrodynamics library was developed
+to aid researchers in dynamical astronomy and multi-body astrodynamics with routine calculations in restricted
+multi-body models.</p>
+<dl class="simple">
+<dt><strong>PyRAA Core Functionality</strong></dt><dd><ul class="simple">
+<li><p>Circular and Elliptical Restricted Three-body dynamical models</p></li>
+<li><p>Variable precision Runge-Kutta numerical integration</p></li>
+<li><p>Flexible and advanced plotting capabilities</p></li>
+<li><p>Differential corrections targeting algorithms</p></li>
+<li><p>Numerical continuation schemes</p></li>
+<li><p>Poincaré map generation</p></li>
+</ul>
+</dd>
+</dl>
+<p><strong>What is a restricted multi-body model?</strong></p>
+<p>A restricted multi-body model is a simplification of the gravitational N-body problem. The model assumes that
+the particle of interest is massless and subject to the gravitational influce of two or more other bodies.
+The massive bodies move in predictable 2-body motion, while the particle of interest is studied under the
+dynamics of two or more gravitational interactions.</p>
+<p>Examples:</p>
+<ul class="simple">
+<li><p>Circular Restricted Three-body Problem (CRT3BP)</p></li>
+<li><p>Elliptical Restricted Three-body Problem (ERT3BP)</p></li>
+<li><p>Bicircular Restricted Four-body Problem (BCR4BP)</p></li>
+</ul>
+<p><strong>What are restricted multi-body models used for?</strong></p>
+<p>Restricted multi-body models are most useful when studying the effects of multiple gravitational fields
+on a body that is relatively small compared to the influencing masses.</p>
+<ul class="simple">
+<li><p>Earth-Moon spacecraft trajectory design</p></li>
+<li><p>Circumbinary exoplanet orbital dynamics</p></li>
+<li><p>Dust particles in at solar system with a giant planet</p></li>
+</ul>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<dl class="simple">
+<dt>New Features!</dt><dd><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">numba</span></code> accelerated computations, integration time peformance boost, <em>10x faster</em></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">pyraa.Targeter</span></code> object oriented differential corrections and eigenspectrum analysis</p></li>
+<li><p>inertial coordinates saved as <code class="docutils literal notranslate"><span class="pre">sat</span></code> attribute</p></li>
+</ul>
+</dd>
+</dl>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The primary use-case for <code class="docutils literal notranslate"><span class="pre">PyRAA</span></code> is dynamical systems analysis of restricted multi-body models used in astrodynamics
+and dynamical astronomy.</p>
+<p><code class="docutils literal notranslate"><span class="pre">PyRAA</span></code> does not have functionality similar to other orbital dynamics software such as <code class="docutils literal notranslate"><span class="pre">REBOUND</span></code>,
+<code class="docutils literal notranslate"><span class="pre">poliastro</span></code>, <code class="docutils literal notranslate"><span class="pre">STK</span></code>, etc.</p>
+<p><strong>Not supported features</strong></p>
+<ul class="simple">
+<li><p>N-body integration</p></li>
+<li><p>2-body orbital dynamics</p></li>
+<li><p>Lambert solver</p></li>
+<li><p>General coordinate transformations</p></li>
+</ul>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Author</dt>
+<dd class="field-odd"><p>Drew Langford</p>
+</dd>
+<dt class="field-even">Email</dt>
+<dd class="field-even"><p><a class="reference external" href="mailto:langfora&#37;&#52;&#48;purdue&#46;edu">langfora<span>&#64;</span>purdue<span>&#46;</span>edu</a></p>
+</dd>
+</dl>
+<div class="toctree-wrapper compound">
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="tutorials.html">PyRAA Tutorials</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tutorials/diff_correct_tutorial.html">PyRAA Differential Corrections Tutorial</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">API Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="models.html"><code class="docutils literal notranslate"><span class="pre">pyraa.models.py</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="satellite.html"><code class="docutils literal notranslate"><span class="pre">pyraa.satellite.py</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="targeting.html"><code class="docutils literal notranslate"><span class="pre">pyraa.targeting.py</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="acknowldegments.html">PyRAA Acknowlegements</a></li>
+</ul>
+</div>
+</section>
+<section id="indices-and-tables">
+<h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this heading"></a></h1>
+<ul class="simple">
+<li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
+<li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
+<li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
+</ul>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="tutorials.html" class="btn btn-neutral float-right" title="PyRAA Tutorials" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Drew Langford.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

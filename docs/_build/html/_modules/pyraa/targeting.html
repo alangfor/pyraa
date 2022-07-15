@@ -1,0 +1,1005 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="English" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>pyraa.targeting &mdash; PyRAA 0.1 documentation</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../index.html" class="icon icon-home"> PyRAA
+            <img src="../../_static/pyraa_logo.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../tutorials.html">PyRAA Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api.html">API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../acknowldegments.html">PyRAA Acknowlegements</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">PyRAA</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+      <li>pyraa.targeting</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for pyraa.targeting</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    targeting module ``targeting.py`` </span>
+<span class="sd">    </span>
+<span class="sd">    This module contains functionality for differential corrections methods to target a </span>
+<span class="sd">    design solution given constraints </span>
+
+<span class="sd">    .. attention::</span>
+<span class="sd">        Classes inherit ``simulation.Simulation``</span>
+
+<span class="sd">    :Authors: </span>
+<span class="sd">        Drew Langford</span>
+
+<span class="sd">    :Last Edit: </span>
+<span class="sd">        Langford, 07/2022</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="c1"># Standard imports</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">time</span>
+
+<span class="c1"># Third-party</span>
+<span class="kn">import</span> <span class="nn">h5py</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">scipy.optimize</span> <span class="k">as</span> <span class="nn">scio</span>
+<span class="kn">import</span> <span class="nn">scipy.integrate</span>
+
+<span class="c1"># PyRAA imports</span>
+<span class="kn">from</span> <span class="nn">pyraa.simulation</span> <span class="kn">import</span> <span class="n">Simulation</span>
+<span class="kn">from</span> <span class="nn">pyraa.models</span> <span class="kn">import</span> <span class="n">Models</span>
+<span class="kn">import</span> <span class="nn">pyraa.dyn_sys_tools</span> <span class="k">as</span> <span class="nn">tool</span>
+
+
+<div class="viewcode-block" id="Targeter"><a class="viewcode-back" href="../../targeting.html#pyraa.targeting.Targeter">[docs]</a><span class="k">class</span> <span class="nc">Targeter</span><span class="p">(</span><span class="n">Simulation</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Targeter Class</span>
+
+<span class="sd">    Implements differential corrections algorithms for computing a trajectory that </span>
+<span class="sd">    satisfies a set of constraints</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    Xd_vars: list of strs</span>
+<span class="sd">        Vector of design variables, [&#39;x&#39;, &#39;y&#39;, &#39;z&#39;, &#39;vx&#39;, &#39;vy&#39;, &#39;vz&#39;, &#39;T&#39;]</span>
+
+<span class="sd">        *Example* -- Xd_vars = [&#39;x&#39;, &#39;vy&#39;, &#39;T&#39;]</span>
+
+<span class="sd">    Xc_dict: dict</span>
+<span class="sd">        Dictionary of constraint expressions, key -&gt; variable, value -&gt; constriant</span>
+<span class="sd">        </span>
+<span class="sd">        Key options: [&#39;x&#39;, &#39;y&#39;, &#39;z&#39;, &#39;vx&#39;, &#39;vy&#39;, &#39;vz&#39;]</span>
+
+<span class="sd">        *Example* -- {&#39;y&#39; : 0, &#39;vx&#39; : 0}</span>
+<span class="sd">    dynamics: str</span>
+<span class="sd">        name of dynamical model, options: &quot;CR3BP&quot;, &quot;ER3BP&quot;</span>
+<span class="sd">    mu: float</span>
+<span class="sd">        mass ratio of primaries</span>
+<span class="sd">    e: float</span>
+<span class="sd">        eccentricity</span>
+<span class="sd">    eps:</span>
+<span class="sd">        precision of targeting algorithm</span>
+
+<span class="sd">    </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    None</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Xd_vars</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">Xc_dict</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">dynamics</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">mu</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">e</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">eps</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
+
+        <span class="c1"># Init the parent Simulation class</span>
+        <span class="n">Simulation</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dynamics</span><span class="o">=</span><span class="n">dynamics</span><span class="p">,</span> <span class="n">mu</span><span class="o">=</span><span class="n">mu</span><span class="p">,</span> <span class="n">e</span><span class="o">=</span><span class="n">e</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span> <span class="kc">False</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">var_dict</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;x&#39;</span> <span class="p">:</span>  <span class="mi">0</span><span class="p">,</span> 
+            <span class="s1">&#39;y&#39;</span> <span class="p">:</span>  <span class="mi">1</span><span class="p">,</span> 
+            <span class="s1">&#39;z&#39;</span> <span class="p">:</span>  <span class="mi">2</span><span class="p">,</span>
+            <span class="s1">&#39;vx&#39;</span> <span class="p">:</span> <span class="mi">3</span><span class="p">,</span>
+            <span class="s1">&#39;vy&#39;</span> <span class="p">:</span> <span class="mi">4</span><span class="p">,</span>
+            <span class="s1">&#39;vz&#39;</span> <span class="p">:</span> <span class="mi">5</span><span class="p">,</span>
+            <span class="s1">&#39;T&#39;</span> <span class="p">:</span> <span class="mi">6</span>
+            <span class="p">}</span>
+
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">Nd</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">Xd_vars</span><span class="p">)</span> <span class="c1"># set length of design variable array</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Xd_vars</span> <span class="o">=</span> <span class="n">Xd_vars</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">Nc</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">Xc_dict</span><span class="p">)</span> <span class="c1"># set length of constriant variable array</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Xc_dict</span> <span class="o">=</span> <span class="n">Xc_dict</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">Nd</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">Nc</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Increase design variables&#39;</span><span class="p">)</span>
+
+        <span class="c1"># Set up design variable element array</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Xd_els</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">Xd_vars</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">Xd_els</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">var_dict</span><span class="p">[</span><span class="n">var</span><span class="p">])</span>
+
+        <span class="c1"># init error list</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">errors</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">error</span> <span class="o">=</span> <span class="mi">1000</span>
+        
+        <span class="c1"># set solution precision</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">eps</span> <span class="o">=</span> <span class="n">eps</span>
+        
+
+<div class="viewcode-block" id="Targeter.solve"><a class="viewcode-back" href="../../targeting.html#pyraa.targeting.Targeter.solve">[docs]</a>    <span class="k">def</span> <span class="nf">solve</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">S_g</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">T_g</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        solve - initiates the differential corrections algorithm</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        S_g: 1x6 array</span>
+<span class="sd">            Guess for initial state vector</span>
+<span class="sd">        T_g: float</span>
+<span class="sd">            Guess for propogation time</span>
+<span class="sd">        verbose: bool</span>
+<span class="sd">            if True, prints output of solver</span>
+<span class="sd">        </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        self.S: 1x6 array</span>
+<span class="sd">            Solved intitial state vector</span>
+<span class="sd">        self.T: float</span>
+<span class="sd">            Solved propogation time</span>
+
+
+<span class="sd">        *Assigns atributes*</span>
+
+<span class="sd">        * self.S -- solved state</span>
+<span class="sd">        * self.T -- solved time of propogation</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">error</span> <span class="o">=</span> <span class="mi">50</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">errors</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="n">Xd</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_calc_Xd</span><span class="p">(</span><span class="n">S_g</span><span class="p">,</span> <span class="n">T_g</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Xds</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">Xd</span><span class="p">])</span>
+        <span class="k">while</span> <span class="bp">self</span><span class="o">.</span><span class="n">error</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">eps</span><span class="p">:</span>
+            <span class="n">sc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_sat</span><span class="p">(</span><span class="n">S_g</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">propogate</span><span class="p">(</span><span class="n">T_g</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span> <span class="s1">&#39;DOP853&#39;</span><span class="p">,</span> <span class="n">tol</span> <span class="o">=</span> <span class="p">[</span><span class="mf">1e-12</span><span class="p">,</span> <span class="mf">1e-10</span><span class="p">])</span>
+            <span class="n">S_g</span><span class="p">,</span> <span class="n">T_g</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_update_state</span><span class="p">(</span><span class="n">sc</span><span class="p">)</span>
+            
+            <span class="bp">self</span><span class="o">.</span><span class="n">clear_scs</span><span class="p">()</span>
+
+            <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Error: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">error</span><span class="p">),</span> <span class="n">end</span><span class="o">=</span><span class="s1">&#39;</span><span class="se">\r</span><span class="s1">&#39;</span><span class="p">)</span>
+                <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">0.1</span><span class="p">)</span>
+                
+        <span class="c1"># set sovlved state as solution attribute</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">S</span> <span class="o">=</span> <span class="n">S_g</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">T</span> <span class="o">=</span> <span class="n">T_g</span>
+        
+        <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">()</span>
+            <span class="nb">print</span><span class="p">(</span><span class="mi">80</span><span class="o">*</span><span class="s1">&#39;-&#39;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Solution Found in </span><span class="si">{}</span><span class="s1"> iterations&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">errors</span><span class="p">)))</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;S : </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">S</span><span class="p">))</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;T : </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">T</span><span class="p">))</span>
+            <span class="nb">print</span><span class="p">(</span><span class="mi">80</span><span class="o">*</span><span class="s1">&#39;-&#39;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">()</span>
+
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">S</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">T</span></div>
+
+
+<div class="viewcode-block" id="Targeter.calc_midstate"><a class="viewcode-back" href="../../targeting.html#pyraa.targeting.Targeter.calc_midstate">[docs]</a>    <span class="k">def</span> <span class="nf">calc_midstate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">q_a</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">q_b</span><span class="p">:</span> <span class="nb">list</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        calc_midstate - calculates average state given two design variable arrays</span>
+
+
+<span class="sd">        Takes the saved solution, self.S, self.T and finds a new state that is between</span>
+<span class="sd">        a new design variable, q_a and old deisgn variable q_b. This could be used for </span>
+<span class="sd">        locating the state of a bifurcation. </span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        q_a: design variable array #1</span>
+<span class="sd">        q_b: design variable array #2</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        S_m: 1x6 array</span>
+<span class="sd">            mid-state array</span>
+<span class="sd">        T_m: float</span>
+<span class="sd">            mid-propogation time</span>
+<span class="sd">        |dq|: float</span>
+<span class="sd">            the norm difference between S_m, T_m and the design variable arrays</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">S_a</span><span class="p">,</span> <span class="n">T_b</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fill_new_state</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">S</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">Xd</span> <span class="o">=</span> <span class="n">q_a</span><span class="p">)</span>
+        <span class="n">S_b</span><span class="p">,</span> <span class="n">T_b</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fill_new_state</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">S</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">Xd</span> <span class="o">=</span> <span class="n">q_b</span><span class="p">)</span>
+
+        <span class="n">dq</span> <span class="o">=</span> <span class="p">(</span><span class="n">q_b</span> <span class="o">-</span> <span class="n">q_a</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span>
+        <span class="n">q_m</span> <span class="o">=</span> <span class="n">q_a</span> <span class="o">+</span> <span class="n">dq</span>
+        <span class="n">S_m</span><span class="p">,</span> <span class="n">T_m</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fill_new_state</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">S</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">Xd</span> <span class="o">=</span> <span class="n">q_m</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">S_m</span><span class="p">,</span> <span class="n">T_m</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">dq</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Targeter.calc_eigenspec"><a class="viewcode-back" href="../../targeting.html#pyraa.targeting.Targeter.calc_eigenspec">[docs]</a>    <span class="k">def</span> <span class="nf">calc_eigenspec</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">S</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">T</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">half</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        calc_eigenspec - returns eigenvalues and vectors of state transition matrix</span>
+<span class="sd">        matrix</span>
+
+<span class="sd">        Function propogates *S* for a time, *T*, and calculates eigenspectrum </span>
+<span class="sd">        from last state transition matrix. This function implements a comparative </span>
+<span class="sd">        algorithm for sorting the eigenvalues and eigen vectors. The sorting is based on </span>
+<span class="sd">        the eigenvalue type and follows the general order:</span>
+<span class="sd">        [unitary, complex, real] </span>
+
+<span class="sd">    </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        S: 1x6 array</span>
+<span class="sd">            initial state vector</span>
+<span class="sd">        T: float</span>
+<span class="sd">            time of propogation</span>
+<span class="sd">        half: bool</span>
+<span class="sd">            if True, propogates for 2*T*, use-case is perpendicular crossing</span>
+<span class="sd">        verbose: bool</span>
+<span class="sd">            if True, prints eigenspectrum results</span>
+<span class="sd">        </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        None</span>
+
+
+<span class="sd">        *Assigns atributes*</span>
+<span class="sd">        </span>
+<span class="sd">        * self.M -- monodromy matrix, 6x6 array</span>
+<span class="sd">        * self.val_array -- eigenvalue array, sorted unitary, complex, real</span>
+<span class="sd">        * self.vec_arary -- eigenvector array, sorted unitary, complex, real</span>
+<span class="sd">        * self.nu_array -- nu value array, sorted unitary, complex, real</span>
+<span class="sd">        * self.PCexp_array -- Poincare exponent array, sorted unitary, complex, real</span>
+<span class="sd">        * self.num_U -- number of unitary eigenvalues</span>
+<span class="sd">        * self.num_C -- number of complex eigenvalues</span>
+<span class="sd">        * self.num_R -- number of real eigenvalues</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+    
+        <span class="n">sat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_sat</span><span class="p">(</span><span class="n">S</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">propogate</span><span class="p">(</span><span class="n">T</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">method</span> <span class="o">=</span> <span class="s1">&#39;DOP853&#39;</span><span class="p">)</span>
+
+        <span class="n">s0</span> <span class="o">=</span> <span class="n">sat</span><span class="o">.</span><span class="n">get_states</span><span class="p">()</span><span class="o">.</span><span class="n">T</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">sf</span> <span class="o">=</span> <span class="n">sat</span><span class="o">.</span><span class="n">get_states</span><span class="p">()</span><span class="o">.</span><span class="n">T</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+        <span class="n">per_bool</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">isclose</span><span class="p">(</span><span class="n">s0</span><span class="p">,</span> <span class="n">sf</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">per_bool</span><span class="o">.</span><span class="n">any</span><span class="p">()</span> <span class="o">==</span> <span class="kc">False</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="ne">Warning</span><span class="p">(</span><span class="s1">&#39;Solution is not periodic !&#39;</span><span class="p">))</span>
+
+        <span class="c1"># Floquet Multipliers</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">M</span> <span class="o">=</span> <span class="n">sat</span><span class="o">.</span><span class="n">get_STM</span><span class="p">()</span>
+        <span class="n">eig_vals</span><span class="p">,</span> <span class="n">eig_vecs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">eig</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">M</span><span class="p">)</span>
+        <span class="n">eig_vecs</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">eig_vecs</span><span class="p">[:,</span> <span class="p">:])</span>  <span class="o">&lt;</span> <span class="mf">1e-10</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span> 
+        <span class="bp">self</span><span class="o">.</span><span class="n">clear_scs</span><span class="p">()</span>
+
+        <span class="n">labels</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;U&#39;</span><span class="p">,</span> <span class="s1">&#39;R&#39;</span><span class="p">,</span> <span class="s1">&#39;C&#39;</span><span class="p">]</span>
+        <span class="n">U_els</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">R_els</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">C_els</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">U_vals</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">R_vals</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">C_vals</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">nus</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="c1"># Classify elements</span>
+        <span class="k">for</span> <span class="n">el</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">eig_vals</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">isclose</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="mi">1</span> <span class="o">+</span> <span class="mi">0</span><span class="n">j</span><span class="p">,</span> <span class="n">atol</span> <span class="o">=</span> <span class="mf">1e-1</span><span class="p">):</span>
+                <span class="n">U_els</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">el</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">np</span><span class="o">.</span><span class="n">isclose</span><span class="p">(</span><span class="n">val</span><span class="o">.</span><span class="n">imag</span><span class="p">,</span> <span class="mi">0</span><span class="n">j</span><span class="p">,</span> <span class="n">atol</span> <span class="o">=</span> <span class="mf">1e-10</span><span class="p">):</span>
+                <span class="n">R_els</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">el</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">C_els</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">el</span><span class="p">)</span>
+            <span class="n">nu</span> <span class="o">=</span> <span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="n">val</span> <span class="o">+</span> <span class="mi">1</span><span class="o">/</span><span class="n">val</span><span class="p">)</span><span class="o">.</span><span class="n">real</span>
+            <span class="n">nus</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">nu</span><span class="p">)</span>
+
+        <span class="n">nus</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">nus</span><span class="p">)</span>
+        <span class="n">U_argpairs</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">R_argpairs</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">C_argpairs</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="n">R_nus</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">C_nus</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">el</span><span class="p">,</span> <span class="n">nu</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">nus</span><span class="p">):</span>
+            <span class="n">arg_pair</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">nu</span> <span class="o">-</span> <span class="n">nus</span><span class="p">))[</span><span class="mi">0</span><span class="p">:</span><span class="mi">2</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">el</span> <span class="ow">in</span> <span class="n">U_els</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">el</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">U_argpairs</span><span class="p">)</span><span class="o">.</span><span class="n">ravel</span><span class="p">():</span>
+                    <span class="n">U_argpairs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">arg_pair</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">el</span> <span class="ow">in</span> <span class="n">R_els</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">el</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">R_argpairs</span><span class="p">)</span><span class="o">.</span><span class="n">ravel</span><span class="p">():</span>
+                    <span class="n">R_argpairs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">arg_pair</span><span class="p">)</span>
+                    <span class="n">R_nus</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">nu</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">el</span> <span class="ow">in</span> <span class="n">C_els</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">el</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">C_argpairs</span><span class="p">)</span><span class="o">.</span><span class="n">ravel</span><span class="p">():</span>
+                    <span class="n">C_argpairs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">arg_pair</span><span class="p">)</span>
+                    <span class="n">C_nus</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">nu</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">R_argpairs</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">R_argpairs_temp</span> <span class="o">=</span> <span class="n">R_argpairs</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="n">R_arg_order</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">R_nus</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">R_argpairs</span><span class="p">)):</span>
+                <span class="n">arg_el</span> <span class="o">=</span> <span class="n">R_arg_order</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+                <span class="n">R_argpairs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">R_argpairs_temp</span><span class="p">[</span><span class="n">arg_el</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">C_argpairs</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">C_argpairs_temp</span> <span class="o">=</span> <span class="n">C_argpairs</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="n">C_arg_order</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">C_nus</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">R_argpairs</span><span class="p">)):</span>
+                <span class="n">arg_el</span> <span class="o">=</span> <span class="n">C_arg_order</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+                <span class="n">C_argpairs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">C_argpairs_temp</span><span class="p">[</span><span class="n">arg_el</span><span class="p">]</span>
+
+        <span class="n">U_dict_array</span> <span class="o">=</span> <span class="p">[</span><span class="n">eig_vals</span><span class="p">[</span><span class="n">el</span><span class="p">]</span><span class="o">.</span><span class="n">real</span> <span class="k">for</span> <span class="n">el</span> <span class="ow">in</span> <span class="n">U_argpairs</span><span class="p">]</span>
+        <span class="n">R_dict_array</span> <span class="o">=</span> <span class="p">[</span><span class="n">eig_vals</span><span class="p">[</span><span class="n">el</span><span class="p">]</span><span class="o">.</span><span class="n">real</span> <span class="k">for</span> <span class="n">el</span> <span class="ow">in</span> <span class="n">R_argpairs</span><span class="p">]</span>
+        <span class="n">C_dict_array</span> <span class="o">=</span> <span class="p">[</span><span class="n">eig_vals</span><span class="p">[</span><span class="n">el</span><span class="p">]</span> <span class="k">for</span> <span class="n">el</span> <span class="ow">in</span> <span class="n">C_argpairs</span><span class="p">]</span>
+
+        <span class="n">Uvec_dict_array</span> <span class="o">=</span> <span class="p">[</span><span class="n">eig_vecs</span><span class="p">[:,</span> <span class="n">el</span><span class="p">]</span><span class="o">.</span><span class="n">real</span><span class="o">.</span><span class="n">T</span> <span class="k">for</span> <span class="n">el</span> <span class="ow">in</span> <span class="n">U_argpairs</span><span class="p">]</span>
+        <span class="n">Rvec_dict_array</span> <span class="o">=</span> <span class="p">[</span><span class="n">eig_vecs</span><span class="p">[:,</span> <span class="n">el</span><span class="p">]</span><span class="o">.</span><span class="n">real</span><span class="o">.</span><span class="n">T</span> <span class="k">for</span> <span class="n">el</span> <span class="ow">in</span> <span class="n">R_argpairs</span><span class="p">]</span>
+        <span class="n">Cvec_dict_array</span><span class="o">=</span> <span class="p">[</span><span class="n">eig_vecs</span><span class="p">[:,</span> <span class="n">el</span><span class="p">]</span><span class="o">.</span><span class="n">T</span> <span class="k">for</span> <span class="n">el</span> <span class="ow">in</span> <span class="n">C_argpairs</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">val_dict</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;U&#39;</span> <span class="p">:</span> <span class="n">U_dict_array</span><span class="p">,</span>
+                    <span class="s1">&#39;R&#39;</span> <span class="p">:</span> <span class="n">R_dict_array</span><span class="p">,</span>
+                    <span class="s1">&#39;C&#39;</span> <span class="p">:</span> <span class="n">C_dict_array</span>
+        <span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">vec_dict</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;U&#39;</span> <span class="p">:</span> <span class="n">Uvec_dict_array</span><span class="p">,</span>
+                    <span class="s1">&#39;R&#39;</span> <span class="p">:</span> <span class="n">Rvec_dict_array</span><span class="p">,</span>
+                    <span class="s1">&#39;C&#39;</span> <span class="p">:</span> <span class="n">Cvec_dict_array</span>
+        <span class="p">}</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_U</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">val_dict</span><span class="p">[</span><span class="s1">&#39;U&#39;</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_R</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">val_dict</span><span class="p">[</span><span class="s1">&#39;R&#39;</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_C</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">val_dict</span><span class="p">[</span><span class="s1">&#39;C&#39;</span><span class="p">])</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">val_array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">3</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="n">dtype</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">complex</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">vec_array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">3</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">6</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">complex</span><span class="p">)</span>
+
+        <span class="n">U_iter</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">while</span> <span class="n">U_iter</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_U</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">val_array</span><span class="p">[</span><span class="n">U_iter</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">val_dict</span><span class="p">[</span><span class="s1">&#39;U&#39;</span><span class="p">][</span><span class="n">U_iter</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">vec_array</span><span class="p">[</span><span class="n">U_iter</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">vec_dict</span><span class="p">[</span><span class="s1">&#39;U&#39;</span><span class="p">][</span><span class="n">U_iter</span><span class="p">]</span>
+            <span class="n">U_iter</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="n">C_iter</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">while</span> <span class="n">C_iter</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_C</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">val_array</span><span class="p">[</span><span class="n">U_iter</span> <span class="o">+</span> <span class="n">C_iter</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">val_dict</span><span class="p">[</span><span class="s1">&#39;C&#39;</span><span class="p">][</span><span class="n">C_iter</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">vec_array</span><span class="p">[</span><span class="n">U_iter</span> <span class="o">+</span> <span class="n">C_iter</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">vec_dict</span><span class="p">[</span><span class="s1">&#39;C&#39;</span><span class="p">][</span><span class="n">C_iter</span><span class="p">]</span>
+            <span class="n">C_iter</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="n">R_iter</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">while</span> <span class="n">R_iter</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_R</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">val_array</span><span class="p">[</span><span class="n">U_iter</span> <span class="o">+</span> <span class="n">C_iter</span> <span class="o">+</span> <span class="n">R_iter</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">val_dict</span><span class="p">[</span><span class="s1">&#39;R&#39;</span><span class="p">][</span><span class="n">R_iter</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">vec_array</span><span class="p">[</span><span class="n">U_iter</span> <span class="o">+</span> <span class="n">C_iter</span> <span class="o">+</span> <span class="n">R_iter</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">vec_dict</span><span class="p">[</span><span class="s1">&#39;R&#39;</span><span class="p">][</span><span class="n">R_iter</span><span class="p">]</span>
+            <span class="n">R_iter</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">PCexp_array</span> <span class="o">=</span> <span class="mi">1</span><span class="o">/</span><span class="n">T</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">val_array</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">PCexp_array</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">PCexp_array</span><span class="p">[:,</span> <span class="p">:])</span><span class="o">&lt;</span> <span class="mf">1e-10</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">nu_array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="n">val</span> <span class="o">+</span> <span class="mi">1</span><span class="o">/</span><span class="n">val</span><span class="p">)</span> <span class="k">for</span> <span class="n">val</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">val_array</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]])</span><span class="o">.</span><span class="n">real</span>
+
+        <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;| </span><span class="si">{}</span><span class="s1"> Unitary | </span><span class="si">{}</span><span class="s1"> Complex | </span><span class="si">{}</span><span class="s1"> Real | &#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_U</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_R</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_C</span><span class="p">))</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Nus || </span><span class="si">{:5.10f}</span><span class="s1"> | </span><span class="si">{:5.10f}</span><span class="s1"> | </span><span class="si">{:5.10f}</span><span class="s1"> ||&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">nu_array</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">nu_array</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">nu_array</span><span class="p">[</span><span class="mi">2</span><span class="p">]))</span>
+            <span class="nb">print</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="Targeter.plot_sol"><a class="viewcode-back" href="../../targeting.html#pyraa.targeting.Targeter.plot_sol">[docs]</a>    <span class="k">def</span> <span class="nf">plot_sol</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">half</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">args</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        plot_sol - plots solved solution using Simulation.plot_orbit</span>
+
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        half: bool</span>
+<span class="sd">            if True, plots for 2T</span>
+
+<span class="sd">        **args:</span>
+<span class="sd">            arguments passed Simulation.plot_orbit</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">sc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_sat</span><span class="p">(</span><span class="n">s0</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">S</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">propogate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">plot_orbit</span><span class="p">(</span><span class="o">**</span><span class="n">args</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Targeter.plot_convergence"><a class="viewcode-back" href="../../targeting.html#pyraa.targeting.Targeter.plot_convergence">[docs]</a>    <span class="k">def</span> <span class="nf">plot_convergence</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        plot_convergence - plots the covergence of a solution, self.S, self.T</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        None</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        ------- </span>
+<span class="sd">        None</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">colors</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;#0051a2&#39;</span><span class="p">,</span> <span class="s1">&#39;#97964a&#39;</span><span class="p">,</span> <span class="s1">&#39;#ffd44f&#39;</span><span class="p">,</span> <span class="s1">&#39;#f4777f&#39;</span><span class="p">,</span> <span class="s1">&#39;#93003a&#39;</span><span class="p">]</span>
+
+        <span class="n">iter_array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">errors</span><span class="p">),</span> <span class="mi">1</span><span class="p">)</span>
+
+        <span class="n">fig</span><span class="p">,</span> <span class="p">(</span><span class="n">ax1</span><span class="p">,</span> <span class="n">ax2</span><span class="p">)</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">sharex</span><span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+        <span class="n">Xds</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Xds</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">var</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Xd_vars</span><span class="p">):</span>
+            <span class="n">ax1</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">iter_array</span><span class="p">,</span> <span class="p">(</span><span class="n">Xds</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">Xds</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">i</span><span class="p">])</span><span class="o">/</span><span class="n">Xds</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">i</span><span class="p">],</span> <span class="n">marker</span> <span class="o">=</span> <span class="s1">&#39;.&#39;</span><span class="p">,</span> <span class="n">label</span> <span class="o">=</span> <span class="n">var</span><span class="p">,</span> <span class="n">color</span> <span class="o">=</span> <span class="n">colors</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+
+        <span class="n">ax1</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">&#39;Error $X_d$&#39;</span><span class="p">)</span>
+        <span class="n">ax1</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+
+        <span class="n">ax2</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">iter_array</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">errors</span><span class="p">,</span> <span class="n">marker</span> <span class="o">=</span> <span class="s1">&#39;.&#39;</span><span class="p">,</span> <span class="n">ls</span> <span class="o">=</span> <span class="s1">&#39;--&#39;</span><span class="p">,</span> <span class="n">color</span> <span class="o">=</span> <span class="s1">&#39;red&#39;</span><span class="p">)</span>
+        <span class="n">ax2</span><span class="o">.</span><span class="n">axhline</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">eps</span><span class="p">,</span> <span class="n">ls</span> <span class="o">=</span> <span class="s1">&#39;-&#39;</span><span class="p">,</span> <span class="n">color</span> <span class="o">=</span> <span class="s1">&#39;black&#39;</span><span class="p">)</span>
+        <span class="n">ax2</span><span class="o">.</span><span class="n">set_yscale</span><span class="p">(</span><span class="s1">&#39;log&#39;</span><span class="p">)</span>
+
+        <span class="n">ax2</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;Error $|F(X)|$&#39;</span><span class="p">)</span>
+        <span class="n">ax2</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">&#39;Iterations&#39;</span><span class="p">)</span>
+
+        <span class="n">ax2</span><span class="o">.</span><span class="n">set_xticks</span><span class="p">(</span><span class="n">iter_array</span><span class="p">)</span>
+
+        <span class="n">ax1</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;PyDAA Targeter Report&#39;</span><span class="p">)</span></div>
+        
+    <span class="k">def</span> <span class="nf">_calc_Xd</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">S0</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">T</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        calc_Xd - calculates a design vector from a state and propogation time</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        S0: 1x6 array</span>
+<span class="sd">            state vector</span>
+<span class="sd">        T: float</span>
+<span class="sd">            time of propogation</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        Xd_i: list</span>
+<span class="sd">            design vector array</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># Set current design variable, subset of state and T</span>
+        <span class="n">Xd_i</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Nd</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">el</span><span class="p">,</span> <span class="n">var</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Xd_vars</span><span class="p">):</span>
+            <span class="n">Xd_el</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">var_dict</span><span class="p">[</span><span class="n">var</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">Xd_el</span> <span class="o">==</span> <span class="mi">6</span><span class="p">:</span>
+                <span class="n">Xd_i</span><span class="p">[</span><span class="n">el</span><span class="p">]</span> <span class="o">=</span> <span class="n">T</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">Xd_i</span><span class="p">[</span><span class="n">el</span><span class="p">]</span> <span class="o">=</span> <span class="n">S0</span><span class="p">[</span><span class="n">Xd_el</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">Xd_i</span>
+
+    <span class="k">def</span> <span class="nf">_calc_FX</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Sf</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">T</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        _calc_FX - calculates a constraint vector from a state and propogation time</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        Sf: 1x6 array</span>
+<span class="sd">            state vector</span>
+<span class="sd">        T: float</span>
+<span class="sd">            time of propogation</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        FX_i: list</span>
+<span class="sd">            contraint vector array</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># Set current constraint variable</span>
+        <span class="n">FX_i</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Nc</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">el</span><span class="p">,</span> <span class="n">var</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Xc_dict</span><span class="p">):</span>
+            <span class="n">Xc_el</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">var_dict</span><span class="p">[</span><span class="n">var</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">Xc_el</span> <span class="o">==</span> <span class="mi">6</span><span class="p">:</span>
+                <span class="n">FX_i</span><span class="p">[</span><span class="n">el</span><span class="p">]</span> <span class="o">=</span> <span class="n">T</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">Xc_dict</span><span class="p">[</span><span class="n">var</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">FX_i</span><span class="p">[</span><span class="n">el</span><span class="p">]</span> <span class="o">=</span> <span class="n">Sf</span><span class="p">[</span><span class="n">Xc_el</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">Xc_dict</span><span class="p">[</span><span class="n">var</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">FX_i</span>
+
+    <span class="k">def</span> <span class="nf">_calc_DFX</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">STMf</span><span class="p">,</span> <span class="n">dS_f</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        _calc_DFX - calculates the Jacobian of the differential corrections algorithm</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        STMf: 6x6 array</span>
+<span class="sd">            Final state transition matrix</span>
+<span class="sd">        dS_f: 1x6 array</span>
+<span class="sd">            Final state derivative array</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        DFX_i: nxm array</span>
+<span class="sd">            Jacobian of current iteration</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># Create the Jacobian matrix</span>
+        <span class="n">DFX_i</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">Nc</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">Nd</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">c_var</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Xc_dict</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">d_var</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Xd_vars</span><span class="p">):</span>
+                <span class="n">el_t</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">var_dict</span><span class="p">[</span><span class="n">c_var</span><span class="p">]</span>
+                <span class="n">el_0</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">var_dict</span><span class="p">[</span><span class="n">d_var</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">el_0</span> <span class="o">==</span> <span class="mi">6</span><span class="p">:</span>
+                    <span class="n">DFX_i</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">dS_f</span><span class="p">[</span><span class="n">el_t</span><span class="p">]</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">DFX_i</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">STMf</span><span class="p">[</span><span class="n">el_t</span><span class="p">,</span> <span class="n">el_0</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">DFX_i</span>
+
+    <span class="k">def</span> <span class="nf">_fill_new_state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">S_old</span><span class="p">,</span> <span class="n">T_old</span><span class="p">,</span> <span class="n">Xd</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        _fill_new_state - creates a new state vector and time of propogation</span>
+<span class="sd">        from a design vector</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        S_old: 1x6 array</span>
+<span class="sd">            old state vector</span>
+<span class="sd">        T_old: float</span>
+<span class="sd">            old time of propogation</span>
+<span class="sd">        Xd: 1xn array</span>
+<span class="sd">            design vector</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        S_new: 1x6 array</span>
+<span class="sd">            new state from design vector</span>
+<span class="sd">        T_new: float</span>
+<span class="sd">            new time of propogation from design vector</span>
+<span class="sd">            </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">S_new</span> <span class="o">=</span> <span class="n">S_old</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">T_new</span> <span class="o">=</span> <span class="n">T_old</span>
+
+        <span class="k">for</span> <span class="n">Xd_el</span><span class="p">,</span> <span class="n">var</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Xd_vars</span><span class="p">):</span>
+            <span class="n">el</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">var_dict</span><span class="p">[</span><span class="n">var</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">el</span> <span class="o">==</span> <span class="mi">6</span><span class="p">:</span>
+                <span class="n">T_new</span> <span class="o">=</span> <span class="n">Xd</span><span class="p">[</span><span class="n">Xd_el</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">S_new</span><span class="p">[</span><span class="n">el</span><span class="p">]</span> <span class="o">=</span> <span class="n">Xd</span><span class="p">[</span><span class="n">Xd_el</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">S_new</span><span class="p">,</span> <span class="n">T_new</span>
+
+    <span class="k">def</span> <span class="nf">_update_state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sat</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        _update_state - takes sc object and solves differential corrections </span>
+<span class="sd">        algorithm to produce an updated state and time of propogatio</span>
+<span class="sd">        </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        sat: satellite.Satellite object</span>
+<span class="sd">            propogated sat object </span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        S_g: 1x6 array</span>
+<span class="sd">            guess for state vector </span>
+<span class="sd">        T_g: float</span>
+<span class="sd">            guess for new time of propogation</span>
+
+<span class="sd">        **Assigns atributes*</span>
+
+<span class="sd">        * self.Xds -- set of design vectors</span>
+<span class="sd">        * self.error -- current error of targeter</span>
+<span class="sd">        * self.errors -- adds current error to list</span>
+<span class="sd">        * self.DFX -- current Jacobian of diff. corrections</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">state_func</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">get_eom_func</span><span class="p">()</span>
+
+        <span class="n">states</span> <span class="o">=</span> <span class="n">sat</span><span class="o">.</span><span class="n">get_states</span><span class="p">()</span><span class="o">.</span><span class="n">T</span>
+        <span class="n">taus</span> <span class="o">=</span> <span class="n">sat</span><span class="o">.</span><span class="n">get_taus</span><span class="p">()</span>
+        <span class="n">STMs</span> <span class="o">=</span> <span class="n">sat</span><span class="o">.</span><span class="n">get_STMs</span><span class="p">()</span>
+
+        <span class="n">S0</span><span class="p">,</span> <span class="n">Sf</span> <span class="o">=</span> <span class="n">states</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">states</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> 
+        <span class="n">tau0</span><span class="p">,</span> <span class="n">tauf</span> <span class="o">=</span> <span class="n">taus</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">taus</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+        <span class="c1"># final STM and state derivative used in Jacobian calculation</span>
+        <span class="n">STMf</span> <span class="o">=</span> <span class="n">STMs</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">dS_f</span> <span class="o">=</span> <span class="n">state_func</span><span class="p">(</span><span class="n">tauf</span><span class="p">,</span> <span class="n">Sf</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">mu</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">e</span><span class="p">,</span> 
+                <span class="n">s</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">s</span><span class="p">,</span> <span class="n">Js</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Js</span><span class="p">,</span> <span class="n">eval_STM</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span>
+
+        <span class="n">Xd_i</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_calc_Xd</span><span class="p">(</span><span class="n">S0</span><span class="p">,</span> <span class="n">T</span> <span class="o">=</span> <span class="n">tauf</span><span class="p">)</span> <span class="c1"># Compute design vector</span>
+        <span class="n">FX_i</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_calc_FX</span><span class="p">(</span><span class="n">Sf</span><span class="p">,</span> <span class="n">T</span> <span class="o">=</span> <span class="n">tauf</span><span class="p">)</span> <span class="c1"># Compute error vector</span>
+        <span class="n">DFX_i</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_calc_DFX</span><span class="p">(</span><span class="n">STMf</span><span class="o">=</span> <span class="n">STMf</span><span class="p">,</span> <span class="n">dS_f</span><span class="o">=</span> <span class="n">dS_f</span><span class="p">)</span> <span class="c1"># Compute jacobian</span>
+   
+        <span class="c1"># Calculate updated design variable array</span>
+        <span class="n">Xd_ip1</span> <span class="o">=</span> <span class="n">Xd_i</span> <span class="o">-</span> <span class="n">DFX_i</span><span class="o">.</span><span class="n">T</span> <span class="o">@</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">inv</span><span class="p">(</span><span class="n">DFX_i</span> <span class="o">@</span> <span class="n">DFX_i</span><span class="o">.</span><span class="n">T</span><span class="p">)</span> <span class="o">@</span> <span class="n">FX_i</span>
+
+        <span class="n">S_g</span><span class="p">,</span> <span class="n">T_g</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fill_new_state</span><span class="p">(</span><span class="n">S_old</span><span class="o">=</span> <span class="n">S0</span><span class="p">,</span> <span class="n">T_old</span><span class="o">=</span> <span class="n">tauf</span><span class="p">,</span> <span class="n">Xd</span> <span class="o">=</span> <span class="n">Xd_ip1</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">Xds</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">Xds</span><span class="p">,</span> <span class="n">Xd_ip1</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">error</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">FX_i</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">error</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">DFX</span> <span class="o">=</span> <span class="n">DFX_i</span>
+
+        <span class="k">return</span> <span class="n">S_g</span><span class="p">,</span> <span class="n">T_g</span></div>
+
+
+<div class="viewcode-block" id="Continuation"><a class="viewcode-back" href="../../targeting.html#pyraa.targeting.Continuation">[docs]</a><span class="k">class</span> <span class="nc">Continuation</span><span class="p">(</span><span class="n">Targeter</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Continuation - class for implementation of solution continuation procedures</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    Xd_vars: list of strs</span>
+<span class="sd">        Vector of design variables, [&#39;x&#39;, &#39;y&#39;, &#39;z&#39;, &#39;vx&#39;, &#39;vy&#39;, &#39;vz&#39;, &#39;T&#39;]</span>
+
+<span class="sd">        *Example* -- Xd_vars = [&#39;x&#39;, &#39;vy&#39;, &#39;T&#39;]</span>
+
+<span class="sd">    Xc_dict: dict</span>
+<span class="sd">        Dictionary of constraint expressions, key -&gt; variable, value -&gt; constriant</span>
+<span class="sd">        </span>
+<span class="sd">        Key options: [&#39;x&#39;, &#39;y&#39;, &#39;z&#39;, &#39;vx&#39;, &#39;vy&#39;, &#39;vz&#39;]</span>
+
+<span class="sd">        *Example* -- {&#39;y&#39; : 0, &#39;vx&#39; : 0}</span>
+<span class="sd">    dynamics: str</span>
+<span class="sd">        name of dynamical model, options: &quot;CR3BP&quot;, &quot;ER3BP&quot;</span>
+<span class="sd">    mu: float</span>
+<span class="sd">        mass ratio of primaries</span>
+<span class="sd">    e: float</span>
+<span class="sd">        eccentricity</span>
+<span class="sd">    eps:</span>
+<span class="sd">        precision of targeting algorithm</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    None</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Xd_vars</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">Xc_dict</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">dynamics</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">mu</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">e</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">eps</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-10</span><span class="p">):</span>
+
+        <span class="n">Targeter</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Xd_vars</span><span class="p">,</span> <span class="n">Xc_dict</span><span class="p">,</span> <span class="n">dynamics</span><span class="p">,</span> <span class="n">mu</span><span class="p">,</span> <span class="n">e</span><span class="p">,</span> <span class="n">eps</span><span class="p">)</span>
+
+        <span class="k">pass</span>
+
+    <span class="k">def</span> <span class="nf">_set_newsol</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">S</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">T</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        set_newsol - assigns a new solution</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        S: 1x6 </span>
+<span class="sd">            state vector</span>
+<span class="sd">        T: float</span>
+<span class="sd">            time of propogation</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        None</span>
+
+<span class="sd">        *Assigns Attributes*  </span>
+
+<span class="sd">        * self.S -- new state arary</span>
+<span class="sd">        * self.T -- new time of propogation</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">S</span> <span class="o">=</span> <span class="n">S</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">T</span> <span class="o">=</span> <span class="n">T</span> 
+    
+
+    <span class="k">def</span> <span class="nf">_value_stop_func</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">S_old</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">T_old</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">S_new</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">T_new</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        value_stop - continutation stop function based on value of solution</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        S_old: 1x6 array</span>
+<span class="sd">            old state array</span>
+<span class="sd">        T_old: float</span>
+<span class="sd">            old time of propogation</span>
+<span class="sd">        S_new: 1x6 array</span>
+<span class="sd">            new state array</span>
+<span class="sd">        T_new: float</span>
+<span class="sd">            new time of propogation</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        continue_bool: bool</span>
+<span class="sd">            if True, stop condition is not satisfied</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">Xd_old</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_calc_Xd</span><span class="p">(</span><span class="n">S_old</span><span class="p">,</span> <span class="n">T_old</span><span class="p">)[</span><span class="bp">self</span><span class="o">.</span><span class="n">stop_var</span><span class="p">]</span>
+        <span class="n">Xd_new</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_calc_Xd</span><span class="p">(</span><span class="n">S_new</span><span class="p">,</span> <span class="n">T_new</span><span class="p">)[</span><span class="bp">self</span><span class="o">.</span><span class="n">stop_var</span><span class="p">]</span>
+
+        <span class="n">stop_array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">Xd_old</span><span class="p">,</span> <span class="n">Xd_new</span><span class="p">,</span> <span class="mi">1_000_000</span><span class="p">)</span>
+        <span class="n">stop_calc</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">isclose</span><span class="p">(</span><span class="n">stop_array</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">stop_val</span><span class="p">,</span> <span class="n">rtol</span> <span class="o">=</span> <span class="mf">1e-5</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">stop_calc</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">continue_bool</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">continue_bool</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="k">return</span> <span class="n">continue_bool</span>
+    
+    <span class="k">def</span> <span class="nf">_iter_stop_func</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">iterations</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        iter_stop_func - continutation stop function based on value of solution</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        iterations: int</span>
+<span class="sd">            number of iterations</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        continue_bool: bool</span>
+<span class="sd">            if True, iteration limit not met</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="n">iterations</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">iterstop</span><span class="p">:</span>
+            <span class="n">continue_bool</span> <span class="o">=</span> <span class="kc">True</span> 
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">continue_bool</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="k">return</span> <span class="n">continue_bool</span>
+
+<div class="viewcode-block" id="Continuation.start"><a class="viewcode-back" href="../../targeting.html#pyraa.targeting.Continuation.start">[docs]</a>    <span class="k">def</span> <span class="nf">start</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">S_g</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">T_g</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">iter_stop</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">stop_dict</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">dXd0_sign</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="o">+</span><span class="mi">1</span><span class="p">,</span> 
+            <span class="n">step_size</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-2</span><span class="p">,</span> <span class="nb">type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;psuedo-arc&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        start - function begins the continuation procedure</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        S_g: 1x6 array</span>
+<span class="sd">            initial state vector </span>
+<span class="sd">        T_g: float</span>
+<span class="sd">            intitial time of propogation</span>
+<span class="sd">        iter_stop: int, optional </span>
+<span class="sd">            number of iterations to stop continuation</span>
+<span class="sd">        stop_dict: dict, optional</span>
+<span class="sd">            dict that specifies parameter or value to stop continuation</span>
+<span class="sd">        Xd0_sign: +/-1, optional</span>
+<span class="sd">            step direction of the first design vector value</span>
+<span class="sd">        step_size: float, optional</span>
+<span class="sd">            size of step to take between solutions</span>
+<span class="sd">        type: str, optional</span>
+<span class="sd">            type of continuation procedure, Options [&#39;psuedo-arc&#39;]</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="n">stop_dict</span> <span class="o">!=</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">key</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">stop_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">())[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="k">for</span> <span class="n">el</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Xd_vars</span><span class="p">)):</span>
+
+                <span class="k">if</span> <span class="nb">str</span><span class="p">(</span><span class="n">key</span><span class="p">)</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">Xd_vars</span><span class="p">[</span><span class="n">el</span><span class="p">]:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">stop_var</span> <span class="o">=</span> <span class="n">el</span>
+            <span class="c1"># self.stop_var = self.var_dict[key]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">stop_val</span> <span class="o">=</span> <span class="n">stop_dict</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+
+            <span class="n">continue_bool</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_value_stop_func</span><span class="p">(</span><span class="n">S_g</span><span class="p">,</span> <span class="n">T_g</span><span class="p">,</span> <span class="n">S_g</span><span class="p">,</span> <span class="n">T_g</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">iter_stop</span> <span class="o">!=</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="nb">iter</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">iterstop</span> <span class="o">=</span> <span class="n">iter_stop</span>
+            <span class="n">continue_bool</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_iter_stop_func</span><span class="p">(</span><span class="nb">iter</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">type</span> <span class="o">==</span> <span class="s1">&#39;pseudo-arc&#39;</span><span class="p">:</span>
+            <span class="n">cont_func</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">psuedo_step_cont</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">States</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Ts</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">vecs</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">vals</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pc_exps</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nus</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">JCs</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">while</span> <span class="n">continue_bool</span><span class="p">:</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">S</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">T</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">S_g</span><span class="p">,</span> <span class="n">T_g</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">calc_eigenspec</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">S</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+            <span class="n">JC</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">JC_func</span><span class="p">(</span><span class="n">tau</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">S</span><span class="p">,</span> <span class="n">mu</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mu</span><span class="p">,</span> <span class="n">e</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">e</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">JCs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">JC</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">States</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">S</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">Ts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">vecs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">vec_array</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">vals</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">val_array</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pc_exps</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">PCexp_array</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">nus</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nu_array</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">clear_scs</span><span class="p">()</span>
+
+            <span class="n">S_g</span><span class="p">,</span> <span class="n">T_g</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_psuedo_step_cont</span><span class="p">(</span><span class="n">dXd0_sign</span><span class="p">,</span> <span class="n">step_size</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">stop_dict</span> <span class="o">!=</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">continue_bool</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_value_stop_func</span><span class="p">(</span>
+                    <span class="n">S_new</span><span class="o">=</span> <span class="n">S_g</span><span class="p">,</span> <span class="n">T_new</span><span class="o">=</span> <span class="n">T_g</span><span class="p">,</span>
+                    <span class="n">S_old</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">S</span><span class="p">,</span> <span class="n">T_old</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">iter_stop</span> <span class="o">!=</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="nb">iter</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39; </span><span class="si">{:3.2f}</span><span class="s1"> %&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">iter</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">iterstop</span><span class="o">*</span><span class="mi">100</span><span class="p">))</span>
+                <span class="n">continue_bool</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_iter_stop_func</span><span class="p">(</span><span class="nb">iter</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">JCs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">JCs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">vecs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">vecs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">vals</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">vals</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pc_exps</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pc_exps</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nus</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nus</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span> <span class="nf">_psuedo_step_cont</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dXd0_sign</span> <span class="o">=</span> <span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="n">step_size</span> <span class="o">=</span> <span class="mf">1e-2</span><span class="p">,</span> <span class="n">null_el</span> <span class="o">=</span> <span class="mi">0</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        _psuedo_step_cont - implements psuedo-arclength continutation procedure</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        Xd0_sign: +/-1, optional</span>
+<span class="sd">            step direction of the first design vector value</span>
+<span class="sd">        step_size: float, optional</span>
+<span class="sd">            size of step to take between solutions</span>
+<span class="sd">        null_el: int, optional</span>
+<span class="sd">            element of null vector matrix to use</span>
+
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        S_g: 1x6 array</span>
+<span class="sd">           guess state array </span>
+<span class="sd">        T_g: float</span>
+<span class="sd">            guess time of propogation</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">Xd_array</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_calc_Xd</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">S</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+        <span class="n">NA</span> <span class="o">=</span> <span class="n">scipy</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">null_space</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">DFX</span><span class="p">)</span>
+        <span class="n">dnull</span> <span class="o">=</span> <span class="n">NA</span><span class="o">.</span><span class="n">T</span><span class="p">[</span><span class="n">null_el</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">isclose</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span><span class="n">dnull</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="n">dXd0_sign</span><span class="p">)</span> <span class="o">!=</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="n">dnull</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="o">*</span><span class="n">dnull</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">NA</span> <span class="o">=</span> <span class="n">scipy</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">null_space</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">DFX</span><span class="p">)</span>
+        <span class="n">Xd_ip1</span> <span class="o">=</span> <span class="n">Xd_array</span> <span class="o">+</span> <span class="n">step_size</span><span class="o">*</span><span class="n">dnull</span>
+
+        <span class="n">S_g</span><span class="p">,</span> <span class="n">T_g</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fill_new_state</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">S</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">Xd_ip1</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">S_g</span> <span class="o">=</span> <span class="n">S_g</span> 
+        <span class="bp">self</span><span class="o">.</span><span class="n">T_g</span> <span class="o">=</span> <span class="n">T_g</span>
+
+        <span class="k">return</span> <span class="n">S_g</span><span class="p">,</span> <span class="n">T_g</span>
+
+<div class="viewcode-block" id="Continuation.save_cont"><a class="viewcode-back" href="../../targeting.html#pyraa.targeting.Continuation.save_cont">[docs]</a>    <span class="k">def</span> <span class="nf">save_cont</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_name</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        save_cont - saves the continuation algorithm solutions to an HDF5 file format</span>
+
+<span class="sd">        * Attributes saved * </span>
+
+<span class="sd">        * self.States</span>
+<span class="sd">        * self.Ts</span>
+<span class="sd">        * self.vals</span>
+<span class="sd">        * self.vecs</span>
+<span class="sd">        * self.nus</span>
+<span class="sd">        * self.PCexp_array</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        file_name: str</span>
+<span class="sd">            name of the file saved </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+    
+        <span class="n">file_path</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">{}</span><span class="s1">.hdf5&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">file_name</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">file_path</span><span class="p">):</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span>
+        <span class="c1"># exists = os.path.exists(file_path)</span>
+        <span class="c1"># i = 0</span>
+        <span class="c1"># while exists == True:</span>
+        <span class="c1">#     i += 1</span>
+        <span class="c1">#     i_str = str(i)</span>
+        <span class="c1">#     temp_name = &#39;_&#39;.join([file_name, i_str])</span>
+        <span class="c1">#     temp_path = &#39;{}.hdf5&#39;.format(temp_name)</span>
+        <span class="c1">#     exists = os.path.exists(temp_path)</span>
+        <span class="c1"># if i &gt;0:</span>
+        <span class="c1">#     file_path = temp_path</span>
+
+        <span class="n">f</span> <span class="o">=</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="s2">&quot;a&quot;</span><span class="p">)</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;mu&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mu</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;e&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">e</span>
+        
+        <span class="n">save_dict</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;IC&#39;</span> <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">States</span><span class="p">,</span>
+            <span class="s1">&#39;T&#39;</span> <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">Ts</span><span class="p">,</span>
+            <span class="s1">&#39;JC&#39;</span> <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">JCs</span><span class="p">,</span>
+            <span class="s1">&#39;m vals&#39;</span> <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">vals</span><span class="p">,</span>
+            <span class="s1">&#39;m vecs&#39;</span> <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">vecs</span><span class="p">,</span>
+            <span class="s1">&#39;nus&#39;</span> <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">nus</span><span class="p">,</span>
+            <span class="s1">&#39;PC exp&#39;</span> <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">PCexp_array</span>
+
+        <span class="p">}</span>
+        <span class="n">keys</span> <span class="o">=</span> <span class="n">save_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+
+        <span class="k">for</span> <span class="n">ID</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">:</span>
+            <span class="n">f</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span><span class="n">name</span> <span class="o">=</span> <span class="n">ID</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="n">save_dict</span><span class="p">[</span><span class="n">ID</span><span class="p">])</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Drew Langford.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
