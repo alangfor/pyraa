@@ -2,7 +2,7 @@
 
 
 # pyraa
-# # Python Restricted Astronomy and Astrodynamics
+## Python Restricted Astronomy and Astrodynamics
 
 Package for dynamical systems analysis of restricted three-body models used in dynamical astronomy and astrodynamics
 
