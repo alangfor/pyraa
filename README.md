@@ -1,6 +1,3 @@
-<p align="center"><img src="docs/PyDAA_logo.png" alt="pyraa" width="500"/></p>
-
-
 # pyraa
 ## Python Restricted Astronomy and Astrodynamics
 
