@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="English" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>pyraa.targeting.py &mdash; PyRAA 0.1 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PyRAA Acknowlegements" href="acknowldegments.html" />
+    <link rel="prev" title="pyraa.satellite.py" href="satellite.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="index.html" class="icon icon-home"> PyRAA
+            <img src="_static/pyraa_logo.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="tutorials.html">PyRAA Tutorials</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="api.html">API Documentation</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="models.html"><code class="docutils literal notranslate"><span class="pre">pyraa.models.py</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="satellite.html"><code class="docutils literal notranslate"><span class="pre">pyraa.satellite.py</span></code></a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#"><code class="docutils literal notranslate"><span class="pre">pyraa.targeting.py</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="acknowldegments.html">PyRAA Acknowlegements</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">PyRAA</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="api.html">API Documentation</a> &raquo;</li>
+      <li><code class="docutils literal notranslate"><span class="pre">pyraa.targeting.py</span></code></li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/targeting.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<section id="module-pyraa.targeting">
+<span id="pyraa-targeting-py"></span><span id="targeting"></span><h1><code class="docutils literal notranslate"><span class="pre">pyraa.targeting.py</span></code><a class="headerlink" href="#module-pyraa.targeting" title="Permalink to this heading"></a></h1>
+<p>targeting module <code class="docutils literal notranslate"><span class="pre">targeting.py</span></code></p>
+<p>This module contains functionality for differential corrections methods to target a
+design solution given constraints</p>
+<div class="admonition attention">
+<p class="admonition-title">Attention</p>
+<p>Classes inherit <code class="docutils literal notranslate"><span class="pre">simulation.Simulation</span></code></p>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Authors</dt>
+<dd class="field-odd"><p>Drew Langford</p>
+</dd>
+<dt class="field-even">Last Edit</dt>
+<dd class="field-even"><p>Langford, 07/2022</p>
+</dd>
+</dl>
+<dl class="py class">
+<dt class="sig sig-object py" id="pyraa.targeting.Continuation">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pyraa.targeting.</span></span><span class="sig-name descname"><span class="pre">Continuation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Xd_vars</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Xc_dict</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dynamics</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mu</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">e</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eps</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1e-10</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyraa/targeting.html#Continuation"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyraa.targeting.Continuation" title="Permalink to this definition"></a></dt>
+<dd><p>Continuation - class for implementation of solution continuation procedures</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>Xd_vars</strong> (<em>list of strs</em>) -- <p>Vector of design variables, ['x', 'y', 'z', 'vx', 'vy', 'vz', 'T']</p>
+<p><em>Example</em> -- Xd_vars = ['x', 'vy', 'T']</p>
+</p></li>
+<li><p><strong>Xc_dict</strong> (<em>dict</em>) -- <p>Dictionary of constraint expressions, key -&gt; variable, value -&gt; constriant</p>
+<p>Key options: ['x', 'y', 'z', 'vx', 'vy', 'vz']</p>
+<p><em>Example</em> -- {'y' : 0, 'vx' : 0}</p>
+</p></li>
+<li><p><strong>dynamics</strong> (<em>str</em>) -- name of dynamical model, options: &quot;CR3BP&quot;, &quot;ER3BP&quot;</p></li>
+<li><p><strong>mu</strong> (<em>float</em>) -- mass ratio of primaries</p></li>
+<li><p><strong>e</strong> (<em>float</em>) -- eccentricity</p></li>
+<li><p><strong>eps</strong> -- precision of targeting algorithm</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="pyraa.targeting.Continuation.save_cont">
+<span class="sig-name descname"><span class="pre">save_cont</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file_name</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyraa/targeting.html#Continuation.save_cont"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyraa.targeting.Continuation.save_cont" title="Permalink to this definition"></a></dt>
+<dd><p>save_cont - saves the continuation algorithm solutions to an HDF5 file format</p>
+<ul class="simple">
+<li><p>Attributes saved *</p></li>
+<li><p>self.States</p></li>
+<li><p>self.Ts</p></li>
+<li><p>self.vals</p></li>
+<li><p>self.vecs</p></li>
+<li><p>self.nus</p></li>
+<li><p>self.PCexp_array</p></li>
+</ul>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>file_name</strong> (<em>str</em>) -- name of the file saved</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyraa.targeting.Continuation.start">
+<span class="sig-name descname"><span class="pre">start</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">S_g</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_g</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">iter_stop</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stop_dict</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">dict</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dXd0_sign</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">step_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.01</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'psuedo-arc'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyraa/targeting.html#Continuation.start"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyraa.targeting.Continuation.start" title="Permalink to this definition"></a></dt>
+<dd><p>start - function begins the continuation procedure</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>S_g</strong> (<em>1x6 array</em>) -- initial state vector</p></li>
+<li><p><strong>T_g</strong> (<em>float</em>) -- intitial time of propogation</p></li>
+<li><p><strong>iter_stop</strong> (<em>int</em><em>, </em><em>optional</em>) -- number of iterations to stop continuation</p></li>
+<li><p><strong>stop_dict</strong> (<em>dict</em><em>, </em><em>optional</em>) -- dict that specifies parameter or value to stop continuation</p></li>
+<li><p><strong>Xd0_sign</strong> (<em>+/-1</em><em>, </em><em>optional</em>) -- step direction of the first design vector value</p></li>
+<li><p><strong>step_size</strong> (<em>float</em><em>, </em><em>optional</em>) -- size of step to take between solutions</p></li>
+<li><p><strong>type</strong> (<em>str</em><em>, </em><em>optional</em>) -- type of continuation procedure, Options ['psuedo-arc']</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="pyraa.targeting.Targeter">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pyraa.targeting.</span></span><span class="sig-name descname"><span class="pre">Targeter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Xd_vars</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Xc_dict</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dynamics</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mu</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">e</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eps</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyraa/targeting.html#Targeter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyraa.targeting.Targeter" title="Permalink to this definition"></a></dt>
+<dd><p>Targeter Class</p>
+<p>Implements differential corrections algorithms for computing a trajectory that
+satisfies a set of constraints</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>Xd_vars</strong> (<em>list of strs</em>) -- <p>Vector of design variables, ['x', 'y', 'z', 'vx', 'vy', 'vz', 'T']</p>
+<p><em>Example</em> -- Xd_vars = ['x', 'vy', 'T']</p>
+</p></li>
+<li><p><strong>Xc_dict</strong> (<em>dict</em>) -- <p>Dictionary of constraint expressions, key -&gt; variable, value -&gt; constriant</p>
+<p>Key options: ['x', 'y', 'z', 'vx', 'vy', 'vz']</p>
+<p><em>Example</em> -- {'y' : 0, 'vx' : 0}</p>
+</p></li>
+<li><p><strong>dynamics</strong> (<em>str</em>) -- name of dynamical model, options: &quot;CR3BP&quot;, &quot;ER3BP&quot;</p></li>
+<li><p><strong>mu</strong> (<em>float</em>) -- mass ratio of primaries</p></li>
+<li><p><strong>e</strong> (<em>float</em>) -- eccentricity</p></li>
+<li><p><strong>eps</strong> -- precision of targeting algorithm</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="pyraa.targeting.Targeter.calc_eigenspec">
+<span class="sig-name descname"><span class="pre">calc_eigenspec</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">S</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">half</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyraa/targeting.html#Targeter.calc_eigenspec"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyraa.targeting.Targeter.calc_eigenspec" title="Permalink to this definition"></a></dt>
+<dd><p>calc_eigenspec - returns eigenvalues and vectors of state transition matrix
+matrix</p>
+<p>Function propogates <em>S</em> for a time, <em>T</em>, and calculates eigenspectrum
+from last state transition matrix. This function implements a comparative
+algorithm for sorting the eigenvalues and eigen vectors. The sorting is based on
+the eigenvalue type and follows the general order:
+[unitary, complex, real]</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>S</strong> (<em>1x6 array</em>) -- initial state vector</p></li>
+<li><p><strong>T</strong> (<em>float</em>) -- time of propogation</p></li>
+<li><p><strong>half</strong> (<em>bool</em>) -- if True, propogates for 2*T*, use-case is perpendicular crossing</p></li>
+<li><p><strong>verbose</strong> (<em>bool</em>) -- if True, prints eigenspectrum results</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+<p><em>Assigns atributes</em></p>
+<ul class="simple">
+<li><p>self.M -- monodromy matrix, 6x6 array</p></li>
+<li><p>self.val_array -- eigenvalue array, sorted unitary, complex, real</p></li>
+<li><p>self.vec_arary -- eigenvector array, sorted unitary, complex, real</p></li>
+<li><p>self.nu_array -- nu value array, sorted unitary, complex, real</p></li>
+<li><p>self.PCexp_array -- Poincare exponent array, sorted unitary, complex, real</p></li>
+<li><p>self.num_U -- number of unitary eigenvalues</p></li>
+<li><p>self.num_C -- number of complex eigenvalues</p></li>
+<li><p>self.num_R -- number of real eigenvalues</p></li>
+</ul>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyraa.targeting.Targeter.calc_midstate">
+<span class="sig-name descname"><span class="pre">calc_midstate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">q_a</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">q_b</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyraa/targeting.html#Targeter.calc_midstate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyraa.targeting.Targeter.calc_midstate" title="Permalink to this definition"></a></dt>
+<dd><p>calc_midstate - calculates average state given two design variable arrays</p>
+<p>Takes the saved solution, self.S, self.T and finds a new state that is between
+a new design variable, q_a and old deisgn variable q_b. This could be used for
+locating the state of a bifurcation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>q_a</strong> (<em>design variable array #1</em>) -- </p></li>
+<li><p><strong>q_b</strong> (<em>design variable array #2</em>) -- </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>S_m</strong> (<em>1x6 array</em>) -- mid-state array</p></li>
+<li><p><strong>T_m</strong> (<em>float</em>) -- mid-propogation time</p></li>
+<li><p><strong>|dq|</strong> (<em>float</em>) -- the norm difference between S_m, T_m and the design variable arrays</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyraa.targeting.Targeter.plot_convergence">
+<span class="sig-name descname"><span class="pre">plot_convergence</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyraa/targeting.html#Targeter.plot_convergence"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyraa.targeting.Targeter.plot_convergence" title="Permalink to this definition"></a></dt>
+<dd><p>plot_convergence - plots the covergence of a solution, self.S, self.T</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>None</strong> -- </p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyraa.targeting.Targeter.plot_sol">
+<span class="sig-name descname"><span class="pre">plot_sol</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">half</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyraa/targeting.html#Targeter.plot_sol"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyraa.targeting.Targeter.plot_sol" title="Permalink to this definition"></a></dt>
+<dd><p>plot_sol - plots solved solution using Simulation.plot_orbit</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>half</strong> (<em>bool</em>) -- if True, plots for 2T</p></li>
+<li><p><strong>**args</strong> -- arguments passed Simulation.plot_orbit</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyraa.targeting.Targeter.solve">
+<span class="sig-name descname"><span class="pre">solve</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">S_g</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_g</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyraa/targeting.html#Targeter.solve"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyraa.targeting.Targeter.solve" title="Permalink to this definition"></a></dt>
+<dd><p>solve - initiates the differential corrections algorithm</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>S_g</strong> (<em>1x6 array</em>) -- Guess for initial state vector</p></li>
+<li><p><strong>T_g</strong> (<em>float</em>) -- Guess for propogation time</p></li>
+<li><p><strong>verbose</strong> (<em>bool</em>) -- if True, prints output of solver</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>self.S</strong> (<em>1x6 array</em>) -- Solved intitial state vector</p></li>
+<li><p><strong>self.T</strong> (<em>float</em>) -- Solved propogation time</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+<p><em>Assigns atributes</em></p>
+<ul class="simple">
+<li><p>self.S -- solved state</p></li>
+<li><p>self.T -- solved time of propogation</p></li>
+</ul>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="satellite.html" class="btn btn-neutral float-left" title="pyraa.satellite.py" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="acknowldegments.html" class="btn btn-neutral float-right" title="PyRAA Acknowlegements" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Drew Langford.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,7 +1,7 @@
-
 h5py 
+imagio
 matplotlib 
-numba 
+numba
 numpy 
 scipy
 pandas 

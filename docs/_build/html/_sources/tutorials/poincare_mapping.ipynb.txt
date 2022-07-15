@@ -1,0 +1,361 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# PyRAA Poincaré Mapping Tutorial \n",
+    "\n",
+    "Author: Drew Langford"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 1,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "pygame 2.1.2 (SDL 2.0.18, Python 3.9.12)\n",
+      "Hello from the pygame community. https://www.pygame.org/contribute.html\n"
+     ]
+    }
+   ],
+   "source": [
+    "import numpy as np\n",
+    "import matplotlib.pyplot as plt\n",
+    "\n",
+    "\n",
+    "from pyraa import simulation\n",
+    "from pyraa import targeting\n",
+    "\n",
+    "%matplotlib qt"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 2,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "\n",
+      "--------------------------------------------------------------------------------\n",
+      "Simulation Overview \n",
+      "--------------------------------------------------------------------------------\n",
+      "     System:                                           Earth-Moon\n",
+      "     Dynamics:                                              CR3BP\n",
+      "     Mass Ratio (mu):                                0.0121505856\n",
+      "     Eccentricity:                                         0.0549\n",
+      "     Number of sc:                                              0\n",
+      "\n",
+      "     Characteristic Mass [kg]:                          6.043e+24\n",
+      "     Characteristic Length [km]:                           384748\n",
+      "     Characteristic Time [s]:                              375700\n",
+      "--------------------------------------------------------------------------------\n"
+     ]
+    }
+   ],
+   "source": [
+    "#  1.0110350588 -0.1731500000 -0.0780141199\n",
+    "sim = simulation.Simulation(dynamics= 'CR3BP', system= 'Earth-Moon')\n",
+    "\n",
+    "\n",
+    "T0 = 1.3632096570\n",
+    "S0 = np.array([1.0110350588, 0, -0.1731500000, 0, -0.0780141199, 0])\n",
+    "\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 3,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "<pyraa.satellite.Satellite at 0x7fa5e8098b20>"
+      ]
+     },
+     "execution_count": 3,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "sim.create_sat(S0)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 4,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Propogating in series..\n",
+      "1 satellite propogated in series\n",
+      "Computaion time 0.229\n"
+     ]
+    }
+   ],
+   "source": [
+    "sim.propogate(T0)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 6,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "sim.plot_orbit(lims = [1, 1, 0.5], Lpoints= True, inertial= True, labels= True, D2 = False)\n",
+    "\n",
+    "plt.show()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 3,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Error: 5.585141135484916e-147\n",
+      "--------------------------------------------------------------------------------\n",
+      "Solution Found in 6 iterations\n",
+      "S : [ 3.3227847   0.          0.          0.         -2.77153502  0.        ]\n",
+      "T : 7.5398223686155035\n",
+      "--------------------------------------------------------------------------------\n",
+      "\n"
+     ]
+    },
+    {
+     "data": {
+      "text/plain": [
+       "(array([ 3.3227847 ,  0.        ,  0.        ,  0.        , -2.77153502,\n",
+       "         0.        ]),\n",
+       " 7.5398223686155035)"
+      ]
+     },
+     "execution_count": 3,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "target = targeting.Targeter(\n",
+    "    Xd_vars= ['x', 'vy'], Xc_dict= {'y': 0, 'vx': 0}, \n",
+    "    dynamics= 'CR3BP', mu = 0.5, e = 0, eps = 1e-10)\n",
+    "\n",
+    "\n",
+    "\n",
+    "target.solve(S_g = S0, T_g = T0, verbose = True)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 15,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Propogating in series..\n",
+      "1 satellite propogated in series\n",
+      "Computaion time 1.15\n",
+      "Propogating Primaries..\n",
+      "Propogating Primaries and Lagrange Points\n"
+     ]
+    }
+   ],
+   "source": [
+    "target.plot_convergence()\n",
+    "target.plot_sol()\n",
+    "\n",
+    "plt.show()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 5,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Error: 2.012126657811722e-137\n",
+      "--------------------------------------------------------------------------------\n",
+      "Solution Found in 5 iterations\n",
+      "S : [ 4.89352994  0.          0.          0.         -4.44007429  0.        ]\n",
+      "T : 6.925536450695457\n",
+      "--------------------------------------------------------------------------------\n",
+      "\n",
+      "| 1 Unitary | 1 Complex | 1 Real | \n",
+      "Nus || 1.0000000000 | 0.8037330607 | 1.1047915198 ||\n",
+      "\n",
+      " 10.00 %\n",
+      "Error: 1.1209776158050752e-13\n",
+      "--------------------------------------------------------------------------------\n",
+      "Solution Found in 3 iterations\n",
+      "S : [ 4.82527344  0.          0.          0.         -4.36859105  0.        ]\n",
+      "T : 6.940732997286629\n",
+      "--------------------------------------------------------------------------------\n",
+      "\n",
+      "| 1 Unitary | 1 Complex | 1 Real | \n",
+      "Nus || 1.0000000000 | 0.7947631157 | 1.1098845264 ||\n",
+      "\n",
+      " 20.00 %\n",
+      "Error: 7.829340492534118e-14\n",
+      "--------------------------------------------------------------------------------\n",
+      "Solution Found in 3 iterations\n",
+      "S : [ 4.75711669  0.          0.          0.         -4.29714266  0.        ]\n",
+      "T : 6.956528397977845\n",
+      "--------------------------------------------------------------------------------\n",
+      "\n",
+      "| 1 Unitary | 1 Complex | 1 Real | \n",
+      "Nus || 1.0000000000 | 0.7852568489 | 1.1153119829 ||\n",
+      "\n",
+      " 30.00 %\n",
+      "Error: 1.5714369574389523e-13\n",
+      "--------------------------------------------------------------------------------\n",
+      "Solution Found in 3 iterations\n",
+      "S : [ 4.68906706  0.          0.          0.         -4.22573469  0.        ]\n",
+      "T : 6.972954842531846\n",
+      "--------------------------------------------------------------------------------\n",
+      "\n",
+      "| 1 Unitary | 1 Complex | 1 Real | \n",
+      "Nus || 1.0000000000 | 0.7751758327 | 1.1211014724 ||\n",
+      "\n",
+      " 40.00 %\n",
+      "Error: 8.040361743361485e-14\n",
+      "--------------------------------------------------------------------------------\n",
+      "Solution Found in 3 iterations\n",
+      "S : [ 4.62113269  0.          0.          0.         -4.15437339  0.        ]\n",
+      "T : 6.990046587618415\n",
+      "--------------------------------------------------------------------------------\n",
+      "\n",
+      "| 1 Unitary | 1 Complex | 1 Real | \n",
+      "Nus || 1.0000000000 | 0.7644786107 | 1.1272832864 ||\n",
+      "\n",
+      " 50.00 %\n",
+      "Error: 6.691445411936148e-147\n",
+      "--------------------------------------------------------------------------------\n",
+      "Solution Found in 3 iterations\n",
+      "S : [ 4.55332251  0.          0.          0.         -4.08306583  0.        ]\n",
+      "T : 7.007840091325866\n",
+      "--------------------------------------------------------------------------------\n",
+      "\n",
+      "| 1 Unitary | 1 Complex | 1 Real | \n",
+      "Nus || 1.0000000000 | 0.7531204694 | 1.1338907252 ||\n",
+      "\n",
+      " 60.00 %\n",
+      "Error: 1.0243333455911135e-14\n",
+      "--------------------------------------------------------------------------------\n",
+      "Solution Found in 3 iterations\n",
+      "S : [ 4.48564635  0.          0.          0.         -4.01181993  0.        ]\n",
+      "T : 7.026374152600563\n",
+      "--------------------------------------------------------------------------------\n",
+      "\n",
+      "| 1 Unitary | 1 Complex | 1 Real | \n",
+      "Nus || 1.0000000000 | 0.7410532018 | 1.1409604364 ||\n",
+      "\n",
+      " 70.00 %\n",
+      "Error: 4.494302291399953e-14\n",
+      "--------------------------------------------------------------------------------\n",
+      "Solution Found in 3 iterations\n",
+      "S : [ 4.41811506  0.          0.          0.         -3.94064465  0.        ]\n",
+      "T : 7.0456900544669105\n",
+      "--------------------------------------------------------------------------------\n",
+      "\n",
+      "| 1 Unitary | 1 Complex | 1 Real | \n",
+      "Nus || 1.0000000000 | 0.7282248644 | 1.1485327925 ||\n",
+      "\n",
+      " 80.00 %\n",
+      "Error: 2.0732007409361385e-13\n",
+      "--------------------------------------------------------------------------------\n",
+      "Solution Found in 3 iterations\n",
+      "S : [ 4.35074064  0.          0.          0.         -3.86955005  0.        ]\n",
+      "T : 7.0658317094047485\n",
+      "--------------------------------------------------------------------------------\n",
+      "\n",
+      "| 1 Unitary | 1 Complex | 1 Real | \n",
+      "Nus || 1.0000000000 | 0.7145795318 | 1.1566523144 ||\n",
+      "\n",
+      " 90.00 %\n",
+      "Error: 3.3488770483372486e-14\n",
+      "--------------------------------------------------------------------------------\n",
+      "Solution Found in 3 iterations\n",
+      "S : [ 4.28353634  0.          0.          0.         -3.79854751  0.        ]\n",
+      "T : 7.086845804663095\n",
+      "--------------------------------------------------------------------------------\n",
+      "\n",
+      "| 1 Unitary | 1 Complex | 1 Real | \n",
+      "Nus || 1.0000000000 | 0.7000570540 | 1.1653681446 ||\n",
+      "\n",
+      " 100.00 %\n"
+     ]
+    }
+   ],
+   "source": [
+    "x0 = 5\n",
+    "vy0 = -x0 + np.power(x0, -0.5)\n",
+    "S0 = np.array([x0, 0, 0, 0, vy0, 0])\n",
+    "T0 = 1.2*2*np.pi\n",
+    "\n",
+    "cont = targeting.Continuation(Xd_vars= ['T', 'x', 'vy'], Xc_dict= {'y': 0, 'vx': 0}, \n",
+    "    dynamics= 'CR3BP', mu = 0.5, e = 0, eps = 1e-10\n",
+    "    )\n",
+    "\n",
+    "\n",
+    "cont.start(S_g = S0, T_g = T0, iter_stop= 10, dXd0_sign= +1, step_size= 1e-1)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 4,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "cont.save_cont('test')"
+   ]
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3.10.4 ('pyraa_env')",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.9.12"
+  },
+  "orig_nbformat": 4,
+  "vscode": {
+   "interpreter": {
+    "hash": "738db7c79d0cafed0537d7f24fa6c81c1d147ef9226fd36c798f62b3f46a5a7d"
+   }
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 2
+}

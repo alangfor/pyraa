@@ -1,12 +1,13 @@
-PyDAA_logo.png
 README.md
+requirements.txt
 setup.py
 .vscode/launch.json
 pyraa/__init__.py
 pyraa/dyn_sys_tools.py
 pyraa/models.py
+pyraa/satellite.py
 pyraa/simulation.py
-pyraa/spacecraft.py
+pyraa/targeting.py
 pyraa.egg-info/PKG-INFO
 pyraa.egg-info/SOURCES.txt
 pyraa.egg-info/dependency_links.txt

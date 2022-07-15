@@ -1,5 +1,5 @@
 """
-    High-fIdelity multi-dody Dynamics Explorer (HIDE)
+    PyDAAT
     ________________________________________________
     Dynamical System Tools
 
@@ -8,13 +8,149 @@
     Written in: Python 3
     Author: Drew Langford
     Last Edited: 8/2/21
+
+
+    List of Functions
+    ------------------------------------------------
+
+    STMs
+    henon_curuve
+    x_zvc_func
+    FTLE
+    JCs
+    poincare
+    manifold_state
+    shooter_update_state
+    multi_shooter_update_state
+    init_shooter
+    init_patches
+    eval_dxdtau
 """
 
+from array import array
 import numpy as np
 from pyraa.models import Models
+import numba as nb
+
+@nb.njit()
+def calc_RV2OE(states, verbose = False):
+    """
+        calc_OE - function which takes state vector, S
+            and calculates the six orbital elements
+
+            f - true anamoly [deg]
+            a - semi-major axis [km]
+            e - eccentricity [0, 1)
+            i - inclination [deg]
+            Om - RA of ascending node [deg]
+            w - argument of perigee [deg]  
+
+            Args:
+                S (1x6 array): state vector [km]/[km/s]
+                    x, y, z, vx, vy, vz in ECI frame  
+                
+                Opt Args:
+                verbose (bool): if True, prints solved OE
+
+            Returns:
+                OE_array (1x6 array) - solved orbital elements
+                    note: all angle quants in deg
+                    [f, a, e, i, Om, w]
+    
+    """
+
+    N = len(states)
+    OE_states = np.zeros((N, 6))
+
+    for index in range(N):
+        r_ = states[index, 0:3]
+        rx, ry, rz = r_
+        v_ = states[index, 3:]
+        vx, vy, vz = v_
+        r = np.linalg.norm(r_)
+        v = np.linalg.norm(v_)
+        vr = np.dot(v_, r_/r)
+
+        # Angular momentum 
+        # Technically OE but not used here
+        h_ = np.cross(r_, v_)
+        h = np.linalg.norm(h_)
+        hz = h_[2]
+
+        N_ = np.array([1.0, 0.0, 0.0])
+        Nx, Ny, Nz = N_
+        N = np.linalg.norm(N_)
+
+        a = 1/(2/r - v**2)
+        e = np.sqrt(1 - h**2/a)
+        i = np.arccos(hz/h)
+
+        # RA of Ascending Node 
+        if Ny >= 0.0:
+            Om = np.arccos(Nx/N)
+        else:
+            Om = 2*np.pi - np.arccos(Nx/N)
+
+        # # Node line calc | Note quad ambiguity
+        # K_ = np.array([0, 0, 1])
+        # N_ = np.cross(K_, h_)
+        # N = np.linalg.norm(N_)
+        # Nx, Ny, Nz = N_
+
+        ### Begin OE Calculations
+
+        # Eccentrcity calc
+
+        e_ = np.cross(v_, h_) - r_/r
+        e = np.linalg.norm(e_)
+        ex, ey, ez = e_
+
+        # Semi-major axis calc
+        a = h**2/(1-e**2)
+
+        # Inclination calc
+        i = np.arccos(h_[2]/h)
+
+        if ey >= 0:
+            w = np.arccos(np.dot(N_/N, e_/e))
+
+        else:
+            w = 2*np.pi - np.arccos(np.dot(N_/N, e_/e))
+
+        if vr >= 0:
+            f = np.arccos(np.dot(e_/e, r_/r))
+        else:
+            f = -np.arccos(np.dot(e_/e, r_/r))
+
+        i_deg = np.rad2deg(i)
+        Om_deg = np.rad2deg(Om)
+        w_deg = np.rad2deg(w)
+        f_deg = np.rad2deg(f)
+
+        OE_states[index] = np.array([f_deg, a, e, i_deg, Om_deg, w_deg])
+
+    return OE_states
+
+
+@nb.njit(parallel = True, debug = False)
+def transform_mult(Qs, vecs, N):
+
+    transform_vec = np.zeros((N, 6), dtype = np.double)
+    for i in nb.prange(N):
+        transform_vec[i] = Qs[i] @ vecs[i]
+
+    return transform_vec
 
 
 def STMs(sc):
+    """ STMs - Calculates and assigns the STMs to a sc
+
+            Args: 
+                sc (obj): spacecraft object 
+
+            Returns:
+                None
+    """
 
     states = sc.get_states().T
     Nstates = len(states)
@@ -28,7 +164,23 @@ def STMs(sc):
     STMs = np.reshape(STMs, (36, Nstates))
     sc.set_STM(STMs)
 
+    return None
+
 def henon_curve(x, JC, mu):
+    """ henon_curve - calculates boundary curve of Henon section [y = 0] Poinacre map
+
+            This function uses the integral constant to compute xdot, when y,ydot=0 for a given x
+
+            Args:
+                x (1-D array) : array of x values to compute 
+                JC (float) : Chosen CR3BP Jacobi integral constant
+                mu (float) : mass ratio of primaries, m2/(m1 + m2)
+
+            Returns 
+                x, xdot (tuple) : masked x and xdot values of the range x.min to x.max which 
+                    a satisfy the integral constant relation
+    
+    """
 
     xdotsq = x**2 +  2*( (1-mu)/np.abs(x + mu) + mu/np.abs(x-(1-mu)) ) - JC
     
@@ -37,14 +189,26 @@ def henon_curve(x, JC, mu):
     
     return x[mask], xdot
 
-def x_zvc_func(x, mu, JC, right = False, far = False):
+def x_zvc_func(x, mu, JC, right = False, left = False):
+    """ x_zvc_func - returns the zero velocity curve functions 
+        with zero crossings correpsonding to the zvc boundary
+
+            Args:
+                x (1-D array) : array of x values to compute the function
+                mu (float) : mass ratio of primaries, m2/(m1 + m2)
+                JC (float) : Chosen CR3BP Jacobi integral constant
+
+            Returns:
+                F (1-D array) : array of zvc func values
+    
+    """
     
     sign = +1
     if right == True:
         sign = -1
         
     sign2 = +1
-    if far == True:
+    if left == True:
         sign2 = -1
     
     F = JC - ( x**2 + 2*( -sign*(1-mu)/(x+mu) -sign2* mu/(x-(1-mu)) ) )
@@ -91,11 +255,11 @@ def FTLE(sc, dynamics):
         eigvals = np.linalg.norm(np.linalg.eigvals(sqrtM))
         lmax = np.max(eigvals)
 
-        FTLEs[i] = (np.exp(-np.power(tau, 31/64)))*np.log(lmax) 
+        FTLEs[i] = np.log(lmax) #*(np.exp(-np.power(tau, 31/64)))
 
     sc.set_FTLEs(FTLEs)
 
-def JCs(sc, model):
+def JCs(sc, model, mu, e):
     """ JCs - calculates Jacobi Constant 
         over a spacecraft trajectory and adds it to the sc properties
 
@@ -114,7 +278,7 @@ def JCs(sc, model):
     JC_func = model.get_JC_func()
     for i, tau in enumerate(taus):
         s = states.T[i]
-        JCs[i] = JC_func(tau, s)
+        JCs[i] = JC_func(tau, s, mu, e)
 
     #sc.set_JCs(JCs)
     return JCs
@@ -235,7 +399,7 @@ def manifold_state(sc):
 
     return um_states, sm_states
 
-def shooter_update_state(sc, X_els, FX_els, X_d, Td, dynamics):
+def shooter_update_state(sc, X_els, FX_els, X_d, Td, dynamics, mu, e, s, Js):
     """ shooter_update_state - calculates updated design variables for 
         single shooting method.
         For use in simulation.Simulation.single_shooter method
@@ -255,7 +419,7 @@ def shooter_update_state(sc, X_els, FX_els, X_d, Td, dynamics):
     """
 
     model = Models(dynamics)
-    state_func = model.get_state_func()
+    state_func = model.get_eom_func()
 
     # Retrieve propogated trajectory info
     S_0 = sc.get_states().T[0]
@@ -263,7 +427,7 @@ def shooter_update_state(sc, X_els, FX_els, X_d, Td, dynamics):
     S_f = sc.get_state()
     tauf = sc.get_tau()
     STMf = sc.get_STMs()[-1]
-    dS_f = state_func(tauf, S_f, eval_STM = False)
+    dS_f = state_func(tauf, S_f, mu, e, s, Js, eval_STM = False)
 
     # Create the design variable array, X
     n = len(X_els)
@@ -298,7 +462,7 @@ def shooter_update_state(sc, X_els, FX_els, X_d, Td, dynamics):
     # Calculate updated design variable array
     X_ip1 = X_i - DFX_i.T @ np.linalg.inv(DFX_i @ DFX_i.T) @ FX_i
 
-    return X_ip1, FX_i
+    return X_ip1, FX_i, DFX_i
 
 def multi_shooter_update_state(sim, Td, patches, epochs, TOFs, N, dynamics, ax = None):
     """ multi_shooter_update_state - calculates updated design and constraint 
@@ -507,6 +671,54 @@ def eval_dxdtau(s, tau0, sim):
 
 
 
+class timer(object):
+    """
+    timer - basic timer class for performance testing 
+
+    Args:
+        None
+
+    Returns:
+        None
+    """
+    def __init__(self):
+        
+        pass
+        
+    def start(self,):
+        """
+        start - starts timer
+        """
+        
+        self.t0 = time.perf_counter()
+        
+    def stop(self, verbose = False):
+        """
+        stop - stops timer
+
+        Args:
+            verbose (bool, optional): if True, prints self.dt
+        """
+        
+        self.tf = time.perf_counter()
+        
+        self.dt = self.tf - self.t0
+        
+        if verbose:
+            self.print_dt()
+        
+        return self.dt
+
+    def print_dt(self,):
+        """
+        print_dt - prints self.dt with format
+        
+        """
+
+        print('DT {} [s] \n'.format(self.dt))
+
+
+
 if __name__ == "__main__":
 
     T_DRO = 3.04253432446400
@@ -516,4 +728,3 @@ if __name__ == "__main__":
     T_bool = [True]
 
     init_shooter(DRO, T_DRO, s_bools, T_bool)
-
