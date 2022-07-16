@@ -5,8 +5,7 @@ Package for dynamical systems analysis of restricted three-body models used in d
 
 ![Lines of code](https://img.shields.io/tokei/lines/github/alangfor/pyraa)
 
-* Does not support N-body integration
-* Does not support 2-body orbital dynamics
+Find documentation [here](https://pyraa.readthedocs.io/en/latest/)
 
 Author: Drew Langford
 Email: langfora@purdue.edu
