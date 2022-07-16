@@ -3,6 +3,8 @@
 
 Package for dynamical systems analysis of restricted three-body models used in dynamical astronomy and astrodynamics
 
+![Lines of code](https://img.shields.io/tokei/lines/github/alangfor/pyraa)
+
 * Does not support N-body integration
 * Does not support 2-body orbital dynamics
 
