@@ -7,4 +7,4 @@ scipy
 pandas 
 progressbar
 sphinx_theme_pd
-
+nbsphinx
