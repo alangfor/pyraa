@@ -77,7 +77,7 @@
 <span class="sd">    :Authors: Drew Langford</span>
 
 <span class="sd">    :Last Edit: </span>
-<span class="sd">        Langford, 06/2022</span>
+<span class="sd">        Langford, 07/2022</span>
 
 <span class="sd">&quot;&quot;&quot;</span>
 
@@ -91,6 +91,9 @@
 <span class="kn">import</span> <span class="nn">pathlib</span>
 <span class="kn">import</span> <span class="nn">time</span>
 <span class="kn">import</span> <span class="nn">warnings</span>
+
+<span class="n">environ</span><span class="p">[</span><span class="s1">&#39;PYGAME_HIDE_SUPPORT_PROMPT&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;1&#39;</span>
+<span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s2">&quot;ignore&quot;</span><span class="p">)</span>
 
 <span class="c1"># Third-Party packages</span>
 <span class="kn">import</span> <span class="nn">h5py</span>
@@ -110,10 +113,6 @@
 <span class="kn">from</span> <span class="nn">pyraa.models</span> <span class="kn">import</span> <span class="n">Models</span>
 <span class="kn">from</span> <span class="nn">pyraa.satellite</span> <span class="kn">import</span> <span class="n">Satellite</span>
 <span class="kn">import</span> <span class="nn">pyraa.dyn_sys_tools</span> <span class="k">as</span> <span class="nn">tools</span>
-
-
-<span class="n">environ</span><span class="p">[</span><span class="s1">&#39;PYGAME_HIDE_SUPPORT_PROMPT&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;1&#39;</span>
-<span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s2">&quot;ignore&quot;</span><span class="p">)</span>
 
 
 <span class="n">sys_dict</span> <span class="o">=</span> <span class="p">{</span>
@@ -182,17 +181,6 @@
 <span class="sd">        None</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dynamics</span><span class="p">,</span> <span class="n">mu</span> <span class="o">=</span> <span class="mf">0.012</span><span class="p">,</span> <span class="n">e</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">system</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">verbose</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">intro</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">            Simulation class:</span>
-<span class="sd">                Initialize a simulations enviroment with specified dynamics</span>
-
-<span class="sd">                    Args:</span>
-<span class="sd">                        dynamics (str): dynamical model of the simulated enviroment</span>
-<span class="sd">                            Options: [&#39;CR3BP&#39;, &#39;ER3BP&#39;, &#39;BCR4BP&#39;, &#39;BER4BP&#39;]</span>
-
-<span class="sd">                    Returns:</span>
-<span class="sd">                        None</span>
-<span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="k">if</span> <span class="n">intro</span><span class="p">:</span>
             <span class="n">file</span> <span class="o">=</span> <span class="s1">&#39;intro_music.mp3&#39;</span>
@@ -307,7 +295,10 @@
 <div class="viewcode-block" id="Simulation.print_sim_state"><a class="viewcode-back" href="../../simulation.html#pyraa.simulation.Simulation.print_sim_state">[docs]</a>    <span class="k">def</span> <span class="nf">print_sim_state</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        print_sim_state - prints state of simulation object</span>
-<span class="sd">        </span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        None</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">print</span><span class="p">()</span>
         <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;-&#39;</span><span class="o">*</span><span class="mi">80</span><span class="p">)</span>
@@ -344,8 +335,8 @@
 <span class="sd">        </span>
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
-<span class="sd">        sc: class obj</span>
-<span class="sd">            sc object instance</span>
+<span class="sd">        sat: class obj</span>
+<span class="sd">            sat object instance</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="c1"># Initialize a satellite object</span>
 
@@ -363,7 +354,7 @@
 
         <span class="k">return</span> <span class="n">sat</span></div>
 
-<div class="viewcode-block" id="Simulation.load_sc"><a class="viewcode-back" href="../../simulation.html#pyraa.simulation.Simulation.load_sc">[docs]</a>    <span class="k">def</span> <span class="nf">load_sc</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">states</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">taus</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="Simulation.load_sat"><a class="viewcode-back" href="../../simulation.html#pyraa.simulation.Simulation.load_sat">[docs]</a>    <span class="k">def</span> <span class="nf">load_sat</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">states</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">taus</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        load_sc - loads saved states into memory</span>
 
@@ -376,25 +367,23 @@
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="n">s0</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">])</span>
-        <span class="n">sc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_sat</span><span class="p">(</span><span class="n">s0</span><span class="p">)</span>
+        <span class="n">sat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_sat</span><span class="p">(</span><span class="n">s0</span><span class="p">)</span>
 
-        <span class="n">sc</span><span class="o">.</span><span class="n">states</span> <span class="o">=</span> <span class="n">states</span>
-        <span class="n">sc</span><span class="o">.</span><span class="n">taus</span> <span class="o">=</span> <span class="n">taus</span></div>
+        <span class="n">sat</span><span class="o">.</span><span class="n">states</span> <span class="o">=</span> <span class="n">states</span>
+        <span class="n">sat</span><span class="o">.</span><span class="n">taus</span> <span class="o">=</span> <span class="n">taus</span></div>
 
 
-
-    <span class="k">def</span> <span class="nf">ydotconst_func</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tau</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">jc</span><span class="p">):</span>
-
-        <span class="c1"># x, y, z, xdot, ydot, zdot = s</span>
-        <span class="c1"># e_state, m_state = self.model.cr3bp_pstates(tau)</span>
-
-        <span class="c1"># r13 = np.linalg.norm(s[0:3] - e_state[0:3])</span>
-        <span class="c1"># r23 = np.linalg.norm(s[0:3] - m_state[0:3])</span>
+<div class="viewcode-block" id="Simulation.ydotconst_func"><a class="viewcode-back" href="../../simulation.html#pyraa.simulation.Simulation.ydotconst_func">[docs]</a>    <span class="k">def</span> <span class="nf">ydotconst_func</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tau</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">jc</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        </span>
+<span class="sd">        </span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="n">Ust</span> <span class="o">=</span> <span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="n">x</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">mu</span><span class="p">)</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">((</span><span class="n">x</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">mu</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">mu</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">((</span><span class="n">x</span> <span class="o">-</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">mu</span><span class="p">))</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
         <span class="n">ydot</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">Ust</span> <span class="o">-</span> <span class="n">jc</span><span class="p">)</span>
 
-        <span class="k">return</span> <span class="n">ydot</span>
+        <span class="k">return</span> <span class="n">ydot</span></div>
 
 <div class="viewcode-block" id="Simulation.ydot_griddist"><a class="viewcode-back" href="../../simulation.html#pyraa.simulation.Simulation.ydot_griddist">[docs]</a>    <span class="k">def</span> <span class="nf">ydot_griddist</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">xdot</span><span class="p">,</span> <span class="n">JC</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -693,18 +682,17 @@
             <span class="k">for</span> <span class="n">um_sc</span> <span class="ow">in</span> <span class="n">um_list</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">create_sat</span><span class="p">(</span><span class="n">um_sc</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Simulation.clear_scs"><a class="viewcode-back" href="../../simulation.html#pyraa.simulation.Simulation.clear_scs">[docs]</a>    <span class="k">def</span> <span class="nf">clear_scs</span><span class="p">(</span><span class="bp">self</span><span class="p">,):</span>
+<div class="viewcode-block" id="Simulation.clear_sats"><a class="viewcode-back" href="../../simulation.html#pyraa.simulation.Simulation.clear_sats">[docs]</a>    <span class="k">def</span> <span class="nf">clear_sats</span><span class="p">(</span><span class="bp">self</span><span class="p">,):</span>
         <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">            clear_scs:</span>
-<span class="sd">                clears satellite object instances from memory</span>
-<span class="sd">        </span>
+<span class="sd">        clear_sats - clears satellite object instances from simulation memory</span>
+<span class="sd">            </span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="k">del</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sats</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">sats</span> <span class="o">=</span> <span class="p">[]</span></div>
 
-<div class="viewcode-block" id="Simulation.set_e"><a class="viewcode-back" href="../../simulation.html#pyraa.simulation.Simulation.set_e">[docs]</a>    <span class="k">def</span> <span class="nf">set_e</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">new_e</span><span class="p">):</span>
+<div class="viewcode-block" id="Simulation.set_e"><a class="viewcode-back" href="../../simulation.html#pyraa.simulation.Simulation.set_e">[docs]</a>    <span class="k">def</span> <span class="nf">set_e</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">new_e</span><span class="p">,</span> <span class="n">verbose</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        set_e - sets a new eccentricity value of binary system in er3bp </span>
 
@@ -712,16 +700,18 @@
 <span class="sd">        ----------</span>
 <span class="sd">        new_e: float</span>
 <span class="sd">            new eccentricity of binary system, [0, 1)</span>
-
+<span class="sd">        verbose: bool</span>
+<span class="sd">            if True, prints confirmation message and sim state</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">e</span> <span class="o">=</span> <span class="n">new_e</span>
 
-        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Model eccentricity set to </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">e</span><span class="p">))</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">print_sim_state</span><span class="p">()</span></div>
+        <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Model eccentricity set to </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">e</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">print_sim_state</span><span class="p">()</span></div>
 
 
-<div class="viewcode-block" id="Simulation.set_mu"><a class="viewcode-back" href="../../simulation.html#pyraa.simulation.Simulation.set_mu">[docs]</a>    <span class="k">def</span> <span class="nf">set_mu</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">new_mu</span><span class="p">):</span>
+<div class="viewcode-block" id="Simulation.set_mu"><a class="viewcode-back" href="../../simulation.html#pyraa.simulation.Simulation.set_mu">[docs]</a>    <span class="k">def</span> <span class="nf">set_mu</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">new_mu</span><span class="p">,</span> <span class="n">verbose</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        set_mu - sets new mass ratio between p1 and p2</span>
 
@@ -731,39 +721,54 @@
 <span class="sd">        ----------</span>
 <span class="sd">        mu: float</span>
 <span class="sd">            mass ratio of primaries, (0, 0.5]</span>
-
+<span class="sd">        verbose: bool</span>
+<span class="sd">            if True, prints confirmation message and sim state</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">mu</span> <span class="o">=</span> <span class="n">new_mu</span>
 
-        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Model mu set to </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">new_mu</span><span class="p">))</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">print_sim_state</span><span class="p">()</span></div>
-        
-<div class="viewcode-block" id="Simulation.propogate_func"><a class="viewcode-back" href="../../simulation.html#pyraa.simulation.Simulation.propogate_func">[docs]</a>    <span class="k">def</span> <span class="nf">propogate_func</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sc</span><span class="p">,</span> <span class="n">Dtau</span><span class="p">,</span> <span class="n">n_outputs</span><span class="p">,</span> <span class="n">tol</span><span class="p">,</span> <span class="n">method</span><span class="p">,</span> <span class="n">eval_STM</span><span class="p">,</span> <span class="n">p_event</span><span class="p">,</span> <span class="n">event_func</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">epoch</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Model mu set to </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">new_mu</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">print_sim_state</span><span class="p">()</span></div>
+            
+<div class="viewcode-block" id="Simulation.propogate_func"><a class="viewcode-back" href="../../simulation.html#pyraa.simulation.Simulation.propogate_func">[docs]</a>    <span class="k">def</span> <span class="nf">propogate_func</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sc</span><span class="p">,</span> <span class="n">Dtau</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">n_outputs</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">tol</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">,</span> <span class="n">method</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> 
+            <span class="n">eval_STM</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> <span class="n">p_event</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">,</span> <span class="n">event_func</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">epoch</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">            propogate_func:</span>
-<span class="sd">                function for use in the simulation.propogate_parallel, </span>
-<span class="sd">                    simulation.propogate methods</span>
+<span class="sd">        propogate_func - base propogation function</span>
 
-<span class="sd">                    Args:</span>
-<span class="sd">                        sc (sc object): sc object for propogation</span>
-<span class="sd">                        tau_f (float): final non-dim time</span>
-<span class="sd">                        n_outputs (int): number of integration outputs</span>
-<span class="sd">                                        (NOT # of integration steps!) </span>
-<span class="sd">                        tol (tuple): absolute and relative intergation tolerance, set to</span>
-<span class="sd">                            [1e-12, 1e-10] for high precision</span>
-<span class="sd">                        eval_STM: if True, propogates STM matrix</span>
-<span class="sd">                        p_event: tuple specifing state index and trigger value for poincare map</span>
-<span class="sd">                        event_func: func to record events</span>
+<span class="sd">        Function used in `simulation.propogate_parallel` and `simulation.propogate_series`</span>
 
-<span class="sd">                    Returns:</span>
-<span class="sd">                        s_new (6xN): sc states at each t_eval</span>
-<span class="sd">                        t_new (N): evaluated times</span>
+<span class="sd">        Implements `scipy.integrate.solve_ivp`</span>
 
-<span class="sd">                    Opt. Returns:</span>
-<span class="sd">                        y_hits: states at event triggers</span>
-<span class="sd">                        t_hits: times at event triggers </span>
-<span class="sd">                         </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        sat: satellite.Satellite object</span>
+<span class="sd">            sat object for propogation</span>
+<span class="sd">        Dtau: float</span>
+<span class="sd">            time of propogation</span>
+<span class="sd">        n_outputs: int</span>
+<span class="sd">            number of integration step outputs - *NOT* number of integration steps! </span>
+<span class="sd">        method: str</span>
+<span class="sd">            method of integration, Options [&#39;RK45&#39;, &#39;DOP853&#39;]     </span>
+<span class="sd">        tol: tuple</span>
+<span class="sd">            absolute and relative intergation tolerance, set to [1e-12, 1e-10] for high precision</span>
+<span class="sd">        eval_STM: bool</span>
+<span class="sd">            if True, propogates STM matrix</span>
+<span class="sd">        p_event: tuple</span>
+<span class="sd">            tuple specifing state index and trigger value for poincare map</span>
+<span class="sd">        event_func: function</span>
+<span class="sd">            function to record events</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        s_new: 6/42xN array </span>
+<span class="sd">            sat states at each t_eval</span>
+<span class="sd">        t_new: 1xN array</span>
+<span class="sd">            t_evals of the states</span>
+<span class="sd">        y_hits: array, optional</span>
+<span class="sd">            states at event triggers</span>
+<span class="sd">        t_hits: array, optional</span>
+<span class="sd">            times at event triggers </span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="c1">## Set analytic propogation flags</span>
@@ -805,25 +810,36 @@
 
         <span class="k">return</span> <span class="n">s_new</span><span class="p">,</span> <span class="n">tau_new</span></div>
         
-<div class="viewcode-block" id="Simulation.propogate_parallel"><a class="viewcode-back" href="../../simulation.html#pyraa.simulation.Simulation.propogate_parallel">[docs]</a>    <span class="k">def</span> <span class="nf">propogate_parallel</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Dtau</span><span class="p">,</span> <span class="n">n_outputs</span> <span class="o">=</span> <span class="mi">1000</span><span class="p">,</span> <span class="n">tol</span> <span class="o">=</span> <span class="p">[</span><span class="mf">1e-6</span><span class="p">,</span> <span class="mf">1e-3</span><span class="p">],</span> <span class="n">method</span> <span class="o">=</span> <span class="s1">&#39;RK45&#39;</span><span class="p">,</span>
-            <span class="n">eval_STM</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">p_event</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">event_func</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">verbose</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">epoch</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+<div class="viewcode-block" id="Simulation.propogate_parallel"><a class="viewcode-back" href="../../simulation.html#pyraa.simulation.Simulation.propogate_parallel">[docs]</a>    <span class="k">def</span> <span class="nf">propogate_parallel</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Dtau</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">n_outputs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1000</span><span class="p">,</span> <span class="n">tol</span><span class="p">:</span> <span class="nb">tuple</span> <span class="o">=</span> <span class="p">[</span><span class="mf">1e-6</span><span class="p">,</span> <span class="mf">1e-3</span><span class="p">],</span> 
+            <span class="n">method</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;RK45&#39;</span><span class="p">,</span> <span class="n">eval_STM</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">p_event</span><span class="p">:</span> <span class="nb">tuple</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> 
+            <span class="n">event_func</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">epoch</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">            propogate_parallel:</span>
-<span class="sd">                propogates scs until tau_f in parallel</span>
+<span class="sd">        propogate_parallel - parallel propogation method </span>
 
-<span class="sd">                    Args:</span>
-<span class="sd">                        tau_f (float): final non-dim time</span>
-<span class="sd">                        n_outputs (float): # of integration outputs</span>
-<span class="sd">                        tol (tuple): absolute and relative intergation tolerance, set to</span>
-<span class="sd">                            [1e-12, 1e-10] for high precision</span>
-<span class="sd">                        eval_STM: if True, propogates STM matrix</span>
-<span class="sd">                        p_event: tuple specifing state index and trigger value for poincare map</span>
-<span class="sd">                        event_func: func to record events</span>
-<span class="sd">                        verbose: if True, prints propogation info</span>
+<span class="sd">        Implements Python multiprocessing to propogate sats in parallel </span>
 
-<span class="sd">                    Returns:</span>
-<span class="sd">                        None</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        Dtau: float</span>
+<span class="sd">            time of propogation</span>
+<span class="sd">        n_outputs: int</span>
+<span class="sd">            number of integration step outputs - *NOT* number of integration steps! </span>
+<span class="sd">        tol: tuple</span>
+<span class="sd">            absolute and relative intergation tolerance, set to [1e-12, 1e-10] for high precision</span>
+<span class="sd">        method: str</span>
+<span class="sd">            method of integration, Options [&#39;RK45&#39;, &#39;DOP853&#39;]     </span>
+<span class="sd">        eval_STM: bool</span>
+<span class="sd">            if True, propogates STM matrix</span>
+<span class="sd">        p_event: tuple</span>
+<span class="sd">            tuple specifing state index and trigger value for poincare map</span>
+<span class="sd">        event_func: function</span>
+<span class="sd">            function to record events</span>
+<span class="sd">        verbose: bool</span>
+<span class="sd">            if True, prints propogation report</span>
 
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        None</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="c1"># Create multiprocessing pool</span>
         <span class="n">pool</span> <span class="o">=</span> <span class="n">mp</span><span class="o">.</span><span class="n">Pool</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">cpu_count</span><span class="p">())</span>
@@ -835,17 +851,11 @@
         <span class="n">sc_props</span> <span class="o">=</span> <span class="n">pool</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">prop_partial</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">sats</span><span class="p">)</span>
         <span class="n">pool</span><span class="o">.</span><span class="n">terminate</span><span class="p">()</span>
 
-        <span class="nb">print</span><span class="p">(</span><span class="n">sc_props</span><span class="p">)</span>
-
         <span class="c1"># Assign new states and taus to sc</span>
         <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">sc_prop</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">sc_props</span><span class="p">):</span>
 
             <span class="n">s</span> <span class="o">=</span> <span class="n">sc_prop</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">:</span><span class="mi">6</span><span class="p">,</span> <span class="p">:]</span>
             <span class="n">taus</span> <span class="o">=</span> <span class="n">sc_prop</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
-
-            <span class="nb">print</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
-            <span class="nb">print</span><span class="p">(</span><span class="n">taus</span><span class="p">)</span>
-            
             <span class="bp">self</span><span class="o">.</span><span class="n">sats</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">set_state</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">sats</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">set_tau</span><span class="p">(</span><span class="n">taus</span><span class="p">)</span>
 
@@ -868,24 +878,32 @@
             <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1"> satellite propogated in parallel&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sats</span><span class="p">)))</span>
             <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Computaion time </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">dt</span><span class="p">))</span></div>
 
-<div class="viewcode-block" id="Simulation.propogate_series"><a class="viewcode-back" href="../../simulation.html#pyraa.simulation.Simulation.propogate_series">[docs]</a>    <span class="k">def</span> <span class="nf">propogate_series</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Dtau</span><span class="p">,</span> <span class="n">n_outputs</span> <span class="o">=</span> <span class="mi">1000</span><span class="p">,</span> <span class="n">tol</span> <span class="o">=</span> <span class="p">[</span><span class="mf">1e-6</span><span class="p">,</span> <span class="mf">1e-3</span><span class="p">],</span> <span class="n">method</span> <span class="o">=</span> <span class="s1">&#39;RK45&#39;</span><span class="p">,</span>
-            <span class="n">eval_STM</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">p_event</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">event_func</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">verbose</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">epoch</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+<div class="viewcode-block" id="Simulation.propogate_series"><a class="viewcode-back" href="../../simulation.html#pyraa.simulation.Simulation.propogate_series">[docs]</a>    <span class="k">def</span> <span class="nf">propogate_series</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Dtau</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">n_outputs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1000</span><span class="p">,</span> <span class="n">tol</span><span class="p">:</span> <span class="nb">tuple</span> <span class="o">=</span> <span class="p">[</span><span class="mf">1e-6</span><span class="p">,</span> <span class="mf">1e-3</span><span class="p">],</span> 
+            <span class="n">method</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;RK45&#39;</span><span class="p">,</span> <span class="n">eval_STM</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">p_event</span><span class="p">:</span> <span class="nb">tuple</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> 
+            <span class="n">event_func</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">epoch</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; </span>
-<span class="sd">            propogate_series: </span>
-<span class="sd">                propogates sc in series until t</span>
-<span class="sd">                </span>
-<span class="sd">                    Args:</span>
-<span class="sd">                        tau_f (float): final non-dim time</span>
-<span class="sd">                        n_outputs (float): # of integration outputs</span>
-<span class="sd">                        tol (tuple): absolute and relative intergation tolerance, set to</span>
-<span class="sd">                            [1e-12, 1e-10] for high precision</span>
-<span class="sd">                        eval_STM: if True, propogates STM matrix</span>
-<span class="sd">                        p_event: tuple specifing state index and trigger value for poincare map</span>
-<span class="sd">                        event_func: func to record events</span>
-<span class="sd">                        verbose: if True, prints propogation info</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        Dtau: float</span>
+<span class="sd">            time of propogation</span>
+<span class="sd">        n_outputs: int</span>
+<span class="sd">            number of integration step outputs - *NOT* number of integration steps! </span>
+<span class="sd">        tol: tuple</span>
+<span class="sd">            absolute and relative intergation tolerance, set to [1e-12, 1e-10] for high precision</span>
+<span class="sd">        method: str</span>
+<span class="sd">            method of integration, Options [&#39;RK45&#39;, &#39;DOP853&#39;]     </span>
+<span class="sd">        eval_STM: bool</span>
+<span class="sd">            if True, propogates STM matrix</span>
+<span class="sd">        p_event: tuple</span>
+<span class="sd">            tuple specifing state index and trigger value for poincare map</span>
+<span class="sd">        event_func: function</span>
+<span class="sd">            function to record events</span>
+<span class="sd">        verbose: bool</span>
+<span class="sd">            if True, prints propogation report</span>
 
-<span class="sd">                    Returns:</span>
-<span class="sd">                        None</span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        None</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="n">t0</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span>
@@ -912,7 +930,6 @@
                 <span class="bp">self</span><span class="o">.</span><span class="n">sats</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">set_events</span><span class="p">(</span><span class="n">events</span><span class="p">)</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">sats</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">set_etaus</span><span class="p">(</span><span class="n">etaus</span><span class="p">)</span>
 
-
         <span class="c1"># Print out computational time and action</span>
         <span class="n">tf</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span>
         <span class="n">dt</span> <span class="o">=</span> <span class="nb">round</span><span class="p">(</span><span class="n">tf</span><span class="o">-</span><span class="n">t0</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
@@ -921,31 +938,44 @@
             <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1"> satellite propogated in series&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sats</span><span class="p">)))</span>
             <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Computaion time </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">dt</span><span class="p">))</span></div>
 
-<div class="viewcode-block" id="Simulation.propogate"><a class="viewcode-back" href="../../simulation.html#pyraa.simulation.Simulation.propogate">[docs]</a>    <span class="k">def</span> <span class="nf">propogate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tau_f</span><span class="p">,</span> <span class="n">sc</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">n_outputs</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">tol</span> <span class="o">=</span> <span class="p">[</span><span class="mf">1e-6</span><span class="p">,</span> <span class="mf">1e-3</span><span class="p">],</span> <span class="n">method</span> <span class="o">=</span> <span class="s1">&#39;RK45&#39;</span><span class="p">,</span> <span class="n">eval_STM</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> 
-        <span class="n">p_event</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">event_func</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">epoch</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">primaries</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">verbose</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
+<div class="viewcode-block" id="Simulation.propogate"><a class="viewcode-back" href="../../simulation.html#pyraa.simulation.Simulation.propogate">[docs]</a>    <span class="k">def</span> <span class="nf">propogate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dtau</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">sat</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">n_outputs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">tol</span><span class="p">:</span> <span class="nb">tuple</span> <span class="o">=</span> <span class="p">[</span><span class="mf">1e-6</span><span class="p">,</span> <span class="mf">1e-3</span><span class="p">],</span> 
+            <span class="n">method</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;RK45&#39;</span><span class="p">,</span> <span class="n">eval_STM</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">p_event</span><span class="p">:</span> <span class="nb">tuple</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">event_func</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> 
+            <span class="n">epoch</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">primaries</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; </span>
-<span class="sd">            propogate: </span>
-<span class="sd">                General propogation function, determines optimal propogation type and</span>
-<span class="sd">                    initiates propogation of sim.scs</span>
+<span class="sd">        propogate - general propogation function of PyRAA</span>
+
+<span class="sd">        Determines optimal propogation type and initiates propogation of sim.sats</span>
 <span class="sd">                </span>
-<span class="sd">                    Args:</span>
-<span class="sd">                        tau_f (float): final non-dim time</span>
-<span class="sd">                        n_outputs (float): # of integration outputs</span>
-<span class="sd">                        tol (tuple): absolute and relative intergation tolerance, set to</span>
-<span class="sd">                            [1e-12, 1e-10] for high precision</span>
-<span class="sd">                        eval_STM: if True, propogates STM matrix</span>
-<span class="sd">                        p_event: tuple specifing state index and trigger value for poincare map</span>
-<span class="sd">                        event_func: func to record events</span>
-<span class="sd">                        verbose: if True, prints propogation info</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        dtau: float</span>
+<span class="sd">            time of propogation</span>
+<span class="sd">        n_outputs: int</span>
+<span class="sd">            number of integration step outputs - *NOT* number of integration steps! </span>
+<span class="sd">        tol: tuple</span>
+<span class="sd">            absolute and relative intergation tolerance, set to [1e-12, 1e-10] for high precision</span>
+<span class="sd">        method: str</span>
+<span class="sd">            method of integration, Options [&#39;RK45&#39;, &#39;DOP853&#39;]     </span>
+<span class="sd">        eval_STM: bool</span>
+<span class="sd">            if True, propogates STM matrix</span>
+<span class="sd">        p_event: tuple</span>
+<span class="sd">            tuple specifing state index and trigger value for poincare map</span>
+<span class="sd">        event_func: function</span>
+<span class="sd">            function to record events</span>
+<span class="sd">        primaries: bool</span>
+<span class="sd">            if True, propogates primary positions</span>
+<span class="sd">        verbose: bool</span>
+<span class="sd">            if True, prints propogation report</span>
 
-<span class="sd">                    Returns:</span>
-<span class="sd">                        None</span>
-
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        None</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
-        <span class="k">if</span> <span class="n">sc</span> <span class="o">==</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1">## Place to add in specific sat propogation capability</span>
+        <span class="k">if</span> <span class="n">sat</span> <span class="o">==</span> <span class="kc">None</span><span class="p">:</span>
             <span class="c1"># Decide to prop in parallel or series</span>
-            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sats</span><span class="p">)</span><span class="o">&lt;</span><span class="mi">4</span><span class="p">:</span>
+            <span class="k">if</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sats</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sats</span><span class="p">)</span> <span class="o">*</span> <span class="n">dtau</span> <span class="o">&lt;</span> <span class="mi">10</span><span class="p">):</span>
                 <span class="n">propogate_func</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">propogate_series</span>
                 <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
                     <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Propogating in series..&#39;</span><span class="p">)</span>
@@ -955,28 +985,69 @@
                     <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Propogating in parallel..&#39;</span><span class="p">)</span>
 
             <span class="k">if</span> <span class="n">n_outputs</span><span class="o">==</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="n">n_outputs</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">tau_f</span> <span class="o">*</span> <span class="mi">500</span><span class="p">))</span>
+                <span class="n">n_outputs</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">dtau</span> <span class="o">*</span> <span class="mi">500</span><span class="p">))</span>
 
             <span class="c1"># Propogate sc </span>
-            <span class="n">propogate_func</span><span class="p">(</span><span class="n">tau_f</span><span class="p">,</span> <span class="n">n_outputs</span><span class="p">,</span> <span class="n">tol</span><span class="p">,</span> <span class="n">method</span><span class="p">,</span> <span class="n">eval_STM</span><span class="p">,</span> <span class="n">p_event</span><span class="p">,</span> <span class="n">event_func</span><span class="p">,</span> <span class="n">verbose</span><span class="p">,</span> <span class="n">epoch</span><span class="p">)</span> 
+            <span class="n">propogate_func</span><span class="p">(</span><span class="n">dtau</span><span class="p">,</span> <span class="n">n_outputs</span><span class="p">,</span> <span class="n">tol</span><span class="p">,</span> <span class="n">method</span><span class="p">,</span> <span class="n">eval_STM</span><span class="p">,</span> <span class="n">p_event</span><span class="p">,</span> <span class="n">event_func</span><span class="p">,</span> <span class="n">verbose</span><span class="p">,</span> <span class="n">epoch</span><span class="p">)</span> 
 
         <span class="k">if</span> <span class="n">primaries</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">prop_primaries</span><span class="p">()</span></div>
 
-    <span class="k">def</span> <span class="nf">prop_periodic</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">S0</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">N</span><span class="p">):</span>
+<div class="viewcode-block" id="Simulation.prop_periodic"><a class="viewcode-back" href="../../simulation.html#pyraa.simulation.Simulation.prop_periodic">[docs]</a>    <span class="k">def</span> <span class="nf">prop_periodic</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">S0</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">N</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        prop_periodic - resets S0 after T, N times</span>
+<span class="sd">        </span>
+<span class="sd">        A &quot;cheater&quot; function to generate periodic orbits over long time intervals</span>
+<span class="sd">        when precision, time, and motivation are running low :)</span>
 
-        <span class="n">sc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_sat</span><span class="p">(</span><span class="n">S0</span><span class="p">)</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        S0: 1x6 array</span>
+<span class="sd">            Initial periodic state array</span>
+<span class="sd">        T: float</span>
+<span class="sd">            Period </span>
+<span class="sd">        N: int</span>
+<span class="sd">            number of periods to repeat</span>
 
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">sat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_sat</span><span class="p">(</span><span class="n">S0</span><span class="p">)</span>
         <span class="k">for</span> <span class="nb">iter</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">N</span><span class="p">):</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">propogate</span><span class="p">(</span><span class="n">T</span><span class="p">)</span>
-            <span class="n">s_f</span> <span class="o">=</span> <span class="n">sc</span><span class="o">.</span><span class="n">states</span>
+            <span class="n">s_f</span> <span class="o">=</span> <span class="n">sat</span><span class="o">.</span><span class="n">states</span>
             <span class="n">err</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">s_f</span> <span class="o">-</span> <span class="n">S0</span><span class="p">)</span>
             <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Orbit </span><span class="si">{:}</span><span class="s1"> | Error </span><span class="si">{:3.7f}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="n">err</span><span class="p">),</span> <span class="n">end</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="se">\r</span><span class="s1">&#39;</span><span class="p">)</span>
-            <span class="n">sc</span><span class="o">.</span><span class="n">states</span> <span class="o">=</span> <span class="n">S0</span>
+            <span class="n">sat</span><span class="o">.</span><span class="n">states</span> <span class="o">=</span> <span class="n">S0</span></div>
 
 
-    <span class="nd">@nb</span><span class="o">.</span><span class="n">jit</span><span class="p">(</span><span class="n">parallel</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+<div class="viewcode-block" id="Simulation.prop_primaries"><a class="viewcode-back" href="../../simulation.html#pyraa.simulation.Simulation.prop_primaries">[docs]</a>    <span class="nd">@nb</span><span class="o">.</span><span class="n">jit</span><span class="p">(</span><span class="n">parallel</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
     <span class="k">def</span> <span class="nf">prop_primaries</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">taus</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">mu</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">e</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        prop_primaries - propogates primary masses</span>
+
+
+<span class="sd">        Uses dynamical model to sovle for primary positions and Lagrange points</span>
+<span class="sd">        given an array of times. Yes, this function is silly for the CR3BP! </span>
+
+
+<span class="sd">        *Useful for solving Lpoints at a given mu, e!*</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        taus: float</span>
+<span class="sd">            array of times to solve for primary positions</span>
+<span class="sd">        mu: float</span>
+<span class="sd">            mass ratio of system</span>
+<span class="sd">        e: float</span>
+<span class="sd">            eccentricity of system</span>
+<span class="sd">    </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">prim_prop_flag</span><span class="p">:</span>
+            <span class="k">del</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">p1_states</span><span class="p">)</span> 
+            <span class="k">del</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">p2_states</span><span class="p">)</span>
+            <span class="k">del</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">LP_states</span><span class="p">)</span>
 
         <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Propogating Primaries and Lagrange Points&#39;</span><span class="p">)</span>
         <span class="c1">## Populate the primary and Lpoint arrays</span>
@@ -999,7 +1070,7 @@
         <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">dynamics</span> <span class="o">==</span> <span class="s1">&#39;ER3BP&#39;</span><span class="p">:</span>
             <span class="n">time_array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">taus</span><span class="p">)</span>
             <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">nb</span><span class="o">.</span><span class="n">prange</span><span class="p">(</span><span class="n">N</span><span class="p">):</span>
-                <span class="n">time_array</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">models</span><span class="o">.</span><span class="n">calc_E_series</span><span class="p">(</span><span class="n">taus</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">e</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">s</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">Js</span><span class="p">)</span>
+                <span class="n">time_array</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">Models</span><span class="o">.</span><span class="n">calc_E_series</span><span class="p">(</span><span class="n">taus</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">e</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">s</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">Js</span><span class="p">)</span>
             
         <span class="n">p_states</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">N</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">6</span><span class="p">))</span>
         <span class="n">L_states</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">N</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">))</span>
@@ -1022,7 +1093,7 @@
             <span class="n">L_states</span><span class="p">[:,</span> <span class="mi">3</span><span class="p">,</span> <span class="p">:],</span> <span class="n">L_states</span><span class="p">[:,</span> <span class="mi">4</span><span class="p">,</span> <span class="p">:]</span>
         <span class="p">])</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">prim_prop_flag</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">prim_prop_flag</span> <span class="o">=</span> <span class="kc">True</span></div>
 
 
 <div class="viewcode-block" id="Simulation.calc_inertial"><a class="viewcode-back" href="../../simulation.html#pyraa.simulation.Simulation.calc_inertial">[docs]</a>    <span class="k">def</span> <span class="nf">calc_inertial</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -1035,6 +1106,13 @@
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">prim_prop_flag</span> <span class="o">==</span> <span class="kc">False</span><span class="p">:</span>
             <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Propogating Primary States..&#39;</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">prop_primaries</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">inert_prop_flag</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">sat</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">sats</span><span class="p">:</span>
+                <span class="k">del</span><span class="p">(</span><span class="n">sat</span><span class="o">.</span><span class="n">states_inert</span><span class="p">)</span>
+            <span class="k">del</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">p1_inert_states</span><span class="p">)</span>
+            <span class="k">del</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">p2_inert_states</span><span class="p">)</span>
+            <span class="k">del</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">LP_inert_states</span><span class="p">)</span>
 
         <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Beginning Inertial calculation..&#39;</span><span class="p">)</span>
         <span class="n">t0</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span>

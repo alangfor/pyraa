@@ -102,7 +102,7 @@
 <dd class="field-odd"><p>Drew Langford</p>
 </dd>
 <dt class="field-even">Last Edit</dt>
-<dd class="field-even"><p>Langford, 06/2022</p>
+<dd class="field-even"><p>Langford, 07/2022</p>
 </dd>
 </dl>
 <dl class="py class">
@@ -222,12 +222,9 @@ t : the trigger value should be set to 0</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="pyraa.simulation.Simulation.clear_scs">
-<span class="sig-name descname"><span class="pre">clear_scs</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyraa/simulation.html#Simulation.clear_scs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyraa.simulation.Simulation.clear_scs" title="Permalink to this definition"></a></dt>
-<dd><dl class="simple">
-<dt>clear_scs:</dt><dd><p>clears satellite object instances from memory</p>
-</dd>
-</dl>
+<dt class="sig sig-object py" id="pyraa.simulation.Simulation.clear_sats">
+<span class="sig-name descname"><span class="pre">clear_sats</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyraa/simulation.html#Simulation.clear_sats"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyraa.simulation.Simulation.clear_sats" title="Permalink to this definition"></a></dt>
+<dd><p>clear_sats - clears satellite object instances from simulation memory</p>
 </dd></dl>
 
 <dl class="py method">
@@ -317,7 +314,7 @@ L2 - Right of the ZVC</p>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p><strong>sc</strong> -- sc object instance</p>
+<dd class="field-even"><p><strong>sat</strong> -- sat object instance</p>
 </dd>
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p>class obj</p>
@@ -326,8 +323,8 @@ L2 - Right of the ZVC</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="pyraa.simulation.Simulation.load_sc">
-<span class="sig-name descname"><span class="pre">load_sc</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">states</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">taus</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyraa/simulation.html#Simulation.load_sc"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyraa.simulation.Simulation.load_sc" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="pyraa.simulation.Simulation.load_sat">
+<span class="sig-name descname"><span class="pre">load_sat</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">states</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">taus</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyraa/simulation.html#Simulation.load_sat"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyraa.simulation.Simulation.load_sat" title="Permalink to this definition"></a></dt>
 <dd><p>load_sc - loads saved states into memory</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -475,6 +472,11 @@ mainly used for model analysis</p>
 <dt class="sig sig-object py" id="pyraa.simulation.Simulation.print_sim_state">
 <span class="sig-name descname"><span class="pre">print_sim_state</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyraa/simulation.html#Simulation.print_sim_state"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyraa.simulation.Simulation.print_sim_state" title="Permalink to this definition"></a></dt>
 <dd><p>print_sim_state - prints state of simulation object</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
@@ -487,114 +489,138 @@ mainly used for model analysis</p>
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="pyraa.simulation.Simulation.prop_periodic">
+<span class="sig-name descname"><span class="pre">prop_periodic</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">S0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">N</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyraa/simulation.html#Simulation.prop_periodic"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyraa.simulation.Simulation.prop_periodic" title="Permalink to this definition"></a></dt>
+<dd><p>prop_periodic - resets S0 after T, N times</p>
+<p>A &quot;cheater&quot; function to generate periodic orbits over long time intervals
+when precision, time, and motivation are running low :)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>S0</strong> (<em>1x6 array</em>) -- Initial periodic state array</p></li>
+<li><p><strong>T</strong> (<em>float</em>) -- Period</p></li>
+<li><p><strong>N</strong> (<em>int</em>) -- number of periods to repeat</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyraa.simulation.Simulation.prop_primaries">
+<span class="sig-name descname"><span class="pre">prop_primaries</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">taus</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mu</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">e</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyraa/simulation.html#Simulation.prop_primaries"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyraa.simulation.Simulation.prop_primaries" title="Permalink to this definition"></a></dt>
+<dd><p>prop_primaries - propogates primary masses</p>
+<p>Uses dynamical model to sovle for primary positions and Lagrange points
+given an array of times. Yes, this function is silly for the CR3BP!</p>
+<p><em>Useful for solving Lpoints at a given mu, e!</em></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>taus</strong> (<em>float</em>) -- array of times to solve for primary positions</p></li>
+<li><p><strong>mu</strong> (<em>float</em>) -- mass ratio of system</p></li>
+<li><p><strong>e</strong> (<em>float</em>) -- eccentricity of system</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="pyraa.simulation.Simulation.propogate">
-<span class="sig-name descname"><span class="pre">propogate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tau_f</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_outputs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[1e-06,</span> <span class="pre">0.001]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'RK45'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eval_STM</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p_event</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">event_func</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">epoch</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">primaries</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyraa/simulation.html#Simulation.propogate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyraa.simulation.Simulation.propogate" title="Permalink to this definition"></a></dt>
-<dd><dl>
-<dt>propogate:</dt><dd><dl>
-<dt>General propogation function, determines optimal propogation type and</dt><dd><p>initiates propogation of sim.scs</p>
-<dl>
-<dt>Args:</dt><dd><p>tau_f (float): final non-dim time
-n_outputs (float): # of integration outputs
-tol (tuple): absolute and relative intergation tolerance, set to</p>
-<blockquote>
-<div><p>[1e-12, 1e-10] for high precision</p>
-</div></blockquote>
-<p>eval_STM: if True, propogates STM matrix
-p_event: tuple specifing state index and trigger value for poincare map
-event_func: func to record events
-verbose: if True, prints propogation info</p>
+<span class="sig-name descname"><span class="pre">propogate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dtau</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sat</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_outputs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tol</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">[1e-06,</span> <span class="pre">0.001]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'RK45'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eval_STM</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p_event</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">tuple</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">event_func</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">epoch</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">primaries</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyraa/simulation.html#Simulation.propogate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyraa.simulation.Simulation.propogate" title="Permalink to this definition"></a></dt>
+<dd><p>propogate - general propogation function of PyRAA</p>
+<p>Determines optimal propogation type and initiates propogation of sim.sats</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dtau</strong> (<em>float</em>) -- time of propogation</p></li>
+<li><p><strong>n_outputs</strong> (<em>int</em>) -- number of integration step outputs - <em>NOT</em> number of integration steps!</p></li>
+<li><p><strong>tol</strong> (<em>tuple</em>) -- absolute and relative intergation tolerance, set to [1e-12, 1e-10] for high precision</p></li>
+<li><p><strong>method</strong> (<em>str</em>) -- method of integration, Options ['RK45', 'DOP853']</p></li>
+<li><p><strong>eval_STM</strong> (<em>bool</em>) -- if True, propogates STM matrix</p></li>
+<li><p><strong>p_event</strong> (<em>tuple</em>) -- tuple specifing state index and trigger value for poincare map</p></li>
+<li><p><strong>event_func</strong> (<em>function</em>) -- function to record events</p></li>
+<li><p><strong>primaries</strong> (<em>bool</em>) -- if True, propogates primary positions</p></li>
+<li><p><strong>verbose</strong> (<em>bool</em>) -- if True, prints propogation report</p></li>
+</ul>
 </dd>
-<dt>Returns:</dt><dd><p>None</p>
-</dd>
-</dl>
-</dd>
-</dl>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>None</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="pyraa.simulation.Simulation.propogate_func">
-<span class="sig-name descname"><span class="pre">propogate_func</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sc</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Dtau</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_outputs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tol</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eval_STM</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p_event</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">event_func</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">epoch</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyraa/simulation.html#Simulation.propogate_func"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyraa.simulation.Simulation.propogate_func" title="Permalink to this definition"></a></dt>
-<dd><dl>
-<dt>propogate_func:</dt><dd><dl>
-<dt>function for use in the simulation.propogate_parallel,</dt><dd><p>simulation.propogate methods</p>
-<dl>
-<dt>Args:</dt><dd><p>sc (sc object): sc object for propogation
-tau_f (float): final non-dim time
-n_outputs (int): number of integration outputs</p>
-<blockquote>
-<div><p>(NOT # of integration steps!)</p>
-</div></blockquote>
-<dl class="simple">
-<dt>tol (tuple): absolute and relative intergation tolerance, set to</dt><dd><p>[1e-12, 1e-10] for high precision</p>
+<span class="sig-name descname"><span class="pre">propogate_func</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sc</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Dtau</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_outputs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tol</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eval_STM</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p_event</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">event_func</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">epoch</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyraa/simulation.html#Simulation.propogate_func"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyraa.simulation.Simulation.propogate_func" title="Permalink to this definition"></a></dt>
+<dd><p>propogate_func - base propogation function</p>
+<p>Function used in <cite>simulation.propogate_parallel</cite> and <cite>simulation.propogate_series</cite></p>
+<p>Implements <cite>scipy.integrate.solve_ivp</cite></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>sat</strong> (<em>satellite.Satellite object</em>) -- sat object for propogation</p></li>
+<li><p><strong>Dtau</strong> (<em>float</em>) -- time of propogation</p></li>
+<li><p><strong>n_outputs</strong> (<em>int</em>) -- number of integration step outputs - <em>NOT</em> number of integration steps!</p></li>
+<li><p><strong>method</strong> (<em>str</em>) -- method of integration, Options ['RK45', 'DOP853']</p></li>
+<li><p><strong>tol</strong> (<em>tuple</em>) -- absolute and relative intergation tolerance, set to [1e-12, 1e-10] for high precision</p></li>
+<li><p><strong>eval_STM</strong> (<em>bool</em>) -- if True, propogates STM matrix</p></li>
+<li><p><strong>p_event</strong> (<em>tuple</em>) -- tuple specifing state index and trigger value for poincare map</p></li>
+<li><p><strong>event_func</strong> (<em>function</em>) -- function to record events</p></li>
+</ul>
 </dd>
-</dl>
-<p>eval_STM: if True, propogates STM matrix
-p_event: tuple specifing state index and trigger value for poincare map
-event_func: func to record events</p>
-</dd>
-<dt>Returns:</dt><dd><p>s_new (6xN): sc states at each t_eval
-t_new (N): evaluated times</p>
-</dd>
-<dt>Opt. Returns:</dt><dd><p>y_hits: states at event triggers
-t_hits: times at event triggers</p>
-</dd>
-</dl>
-</dd>
-</dl>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>s_new</strong> (<em>6/42xN array</em>) -- sat states at each t_eval</p></li>
+<li><p><strong>t_new</strong> (<em>1xN array</em>) -- t_evals of the states</p></li>
+<li><p><strong>y_hits</strong> (<em>array, optional</em>) -- states at event triggers</p></li>
+<li><p><strong>t_hits</strong> (<em>array, optional</em>) -- times at event triggers</p></li>
+</ul>
+</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="pyraa.simulation.Simulation.propogate_parallel">
-<span class="sig-name descname"><span class="pre">propogate_parallel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Dtau</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_outputs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[1e-06,</span> <span class="pre">0.001]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'RK45'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eval_STM</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p_event</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">event_func</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">epoch</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyraa/simulation.html#Simulation.propogate_parallel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyraa.simulation.Simulation.propogate_parallel" title="Permalink to this definition"></a></dt>
-<dd><dl>
-<dt>propogate_parallel:</dt><dd><p>propogates scs until tau_f in parallel</p>
-<blockquote>
-<div><dl>
-<dt>Args:</dt><dd><p>tau_f (float): final non-dim time
-n_outputs (float): # of integration outputs
-tol (tuple): absolute and relative intergation tolerance, set to</p>
-<blockquote>
-<div><p>[1e-12, 1e-10] for high precision</p>
-</div></blockquote>
-<p>eval_STM: if True, propogates STM matrix
-p_event: tuple specifing state index and trigger value for poincare map
-event_func: func to record events
-verbose: if True, prints propogation info</p>
+<span class="sig-name descname"><span class="pre">propogate_parallel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Dtau</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_outputs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tol</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">[1e-06,</span> <span class="pre">0.001]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'RK45'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eval_STM</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p_event</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">tuple</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">event_func</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">epoch</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyraa/simulation.html#Simulation.propogate_parallel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyraa.simulation.Simulation.propogate_parallel" title="Permalink to this definition"></a></dt>
+<dd><p>propogate_parallel - parallel propogation method</p>
+<p>Implements Python multiprocessing to propogate sats in parallel</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>Dtau</strong> (<em>float</em>) -- time of propogation</p></li>
+<li><p><strong>n_outputs</strong> (<em>int</em>) -- number of integration step outputs - <em>NOT</em> number of integration steps!</p></li>
+<li><p><strong>tol</strong> (<em>tuple</em>) -- absolute and relative intergation tolerance, set to [1e-12, 1e-10] for high precision</p></li>
+<li><p><strong>method</strong> (<em>str</em>) -- method of integration, Options ['RK45', 'DOP853']</p></li>
+<li><p><strong>eval_STM</strong> (<em>bool</em>) -- if True, propogates STM matrix</p></li>
+<li><p><strong>p_event</strong> (<em>tuple</em>) -- tuple specifing state index and trigger value for poincare map</p></li>
+<li><p><strong>event_func</strong> (<em>function</em>) -- function to record events</p></li>
+<li><p><strong>verbose</strong> (<em>bool</em>) -- if True, prints propogation report</p></li>
+</ul>
 </dd>
-<dt>Returns:</dt><dd><p>None</p>
-</dd>
-</dl>
-</div></blockquote>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>None</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="pyraa.simulation.Simulation.propogate_series">
-<span class="sig-name descname"><span class="pre">propogate_series</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Dtau</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_outputs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[1e-06,</span> <span class="pre">0.001]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'RK45'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eval_STM</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p_event</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">event_func</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">epoch</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyraa/simulation.html#Simulation.propogate_series"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyraa.simulation.Simulation.propogate_series" title="Permalink to this definition"></a></dt>
-<dd><dl>
-<dt>propogate_series:</dt><dd><p>propogates sc in series until t</p>
-<blockquote>
-<div><dl>
-<dt>Args:</dt><dd><p>tau_f (float): final non-dim time
-n_outputs (float): # of integration outputs
-tol (tuple): absolute and relative intergation tolerance, set to</p>
-<blockquote>
-<div><p>[1e-12, 1e-10] for high precision</p>
-</div></blockquote>
-<p>eval_STM: if True, propogates STM matrix
-p_event: tuple specifing state index and trigger value for poincare map
-event_func: func to record events
-verbose: if True, prints propogation info</p>
+<span class="sig-name descname"><span class="pre">propogate_series</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Dtau</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_outputs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tol</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">[1e-06,</span> <span class="pre">0.001]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'RK45'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eval_STM</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p_event</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">tuple</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">event_func</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">epoch</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyraa/simulation.html#Simulation.propogate_series"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyraa.simulation.Simulation.propogate_series" title="Permalink to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>Dtau</strong> (<em>float</em>) -- time of propogation</p></li>
+<li><p><strong>n_outputs</strong> (<em>int</em>) -- number of integration step outputs - <em>NOT</em> number of integration steps!</p></li>
+<li><p><strong>tol</strong> (<em>tuple</em>) -- absolute and relative intergation tolerance, set to [1e-12, 1e-10] for high precision</p></li>
+<li><p><strong>method</strong> (<em>str</em>) -- method of integration, Options ['RK45', 'DOP853']</p></li>
+<li><p><strong>eval_STM</strong> (<em>bool</em>) -- if True, propogates STM matrix</p></li>
+<li><p><strong>p_event</strong> (<em>tuple</em>) -- tuple specifing state index and trigger value for poincare map</p></li>
+<li><p><strong>event_func</strong> (<em>function</em>) -- function to record events</p></li>
+<li><p><strong>verbose</strong> (<em>bool</em>) -- if True, prints propogation report</p></li>
+</ul>
 </dd>
-<dt>Returns:</dt><dd><p>None</p>
-</dd>
-</dl>
-</div></blockquote>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>None</p>
 </dd>
 </dl>
 </dd></dl>
@@ -621,23 +647,29 @@ periods (N array): family periods corresponding to IC</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="pyraa.simulation.Simulation.set_e">
-<span class="sig-name descname"><span class="pre">set_e</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">new_e</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyraa/simulation.html#Simulation.set_e"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyraa.simulation.Simulation.set_e" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">set_e</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">new_e</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyraa/simulation.html#Simulation.set_e"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyraa.simulation.Simulation.set_e" title="Permalink to this definition"></a></dt>
 <dd><p>set_e - sets a new eccentricity value of binary system in er3bp</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>new_e</strong> (<em>float</em>) -- new eccentricity of binary system, [0, 1)</p>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>new_e</strong> (<em>float</em>) -- new eccentricity of binary system, [0, 1)</p></li>
+<li><p><strong>verbose</strong> (<em>bool</em>) -- if True, prints confirmation message and sim state</p></li>
+</ul>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="pyraa.simulation.Simulation.set_mu">
-<span class="sig-name descname"><span class="pre">set_mu</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">new_mu</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyraa/simulation.html#Simulation.set_mu"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyraa.simulation.Simulation.set_mu" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">set_mu</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">new_mu</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyraa/simulation.html#Simulation.set_mu"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyraa.simulation.Simulation.set_mu" title="Permalink to this definition"></a></dt>
 <dd><p>set_mu - sets new mass ratio between p1 and p2</p>
 <p>mu := m1/(m1+m2)</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>mu</strong> (<em>float</em>) -- mass ratio of primaries, (0, 0.5]</p>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>mu</strong> (<em>float</em>) -- mass ratio of primaries, (0, 0.5]</p></li>
+<li><p><strong>verbose</strong> (<em>bool</em>) -- if True, prints confirmation message and sim state</p></li>
+</ul>
 </dd>
 </dl>
 </dd></dl>
@@ -695,6 +727,11 @@ Xd_b = [False, True, False, True, False, False]</p>
 a given x, xdot, JC on the x-axis</p>
 <p>Used for grid distributions</p>
 </dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyraa.simulation.Simulation.ydotconst_func">
+<span class="sig-name descname"><span class="pre">ydotconst_func</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tau</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">jc</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyraa/simulation.html#Simulation.ydotconst_func"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyraa.simulation.Simulation.ydotconst_func" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
 
 </dd></dl>
 

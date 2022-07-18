@@ -6,7 +6,7 @@
     :Authors: Drew Langford
 
     :Last Edit: 
-        Langford, 06/2022
+        Langford, 07/2022
 
 """
 
@@ -20,6 +20,9 @@ from os import environ
 import pathlib
 import time
 import warnings
+
+environ['PYGAME_HIDE_SUPPORT_PROMPT'] = '1'
+warnings.filterwarnings("ignore")
 
 # Third-Party packages
 import h5py
@@ -39,10 +42,6 @@ from pygame import mixer
 from pyraa.models import Models
 from pyraa.satellite import Satellite
 import pyraa.dyn_sys_tools as tools
-
-
-environ['PYGAME_HIDE_SUPPORT_PROMPT'] = '1'
-warnings.filterwarnings("ignore")
 
 
 sys_dict = {
@@ -111,17 +110,6 @@ class Simulation:
         None
     """
     def __init__(self, dynamics, mu = 0.012, e = 0.0, system = None, verbose = True, intro = False):
-        """
-            Simulation class:
-                Initialize a simulations enviroment with specified dynamics
-
-                    Args:
-                        dynamics (str): dynamical model of the simulated enviroment
-                            Options: ['CR3BP', 'ER3BP', 'BCR4BP', 'BER4BP']
-
-                    Returns:
-                        None
-        """
 
         if intro:
             file = 'intro_music.mp3'
@@ -236,7 +224,10 @@ class Simulation:
     def print_sim_state(self):
         """
         print_sim_state - prints state of simulation object
-        
+
+        Returns
+        -------
+        None
         """
         print()
         print('-'*80)
@@ -273,8 +264,8 @@ class Simulation:
         
         Returns
         -------
-        sc: class obj
-            sc object instance
+        sat: class obj
+            sat object instance
         """
         # Initialize a satellite object
 
@@ -292,7 +283,7 @@ class Simulation:
 
         return sat
 
-    def load_sc(self, states = None, taus = None):
+    def load_sat(self, states = None, taus = None):
         """
         load_sc - loads saved states into memory
 
@@ -305,20 +296,18 @@ class Simulation:
         """
 
         s0 = np.array([0,0,0,0,0,0])
-        sc = self.create_sat(s0)
+        sat = self.create_sat(s0)
 
-        sc.states = states
-        sc.taus = taus
-
+        sat.states = states
+        sat.taus = taus
 
 
     def ydotconst_func(self, tau, x, jc):
-
-        # x, y, z, xdot, ydot, zdot = s
-        # e_state, m_state = self.model.cr3bp_pstates(tau)
-
-        # r13 = np.linalg.norm(s[0:3] - e_state[0:3])
-        # r23 = np.linalg.norm(s[0:3] - m_state[0:3])
+        """
+        
+        
+        
+        """
 
         Ust = 0.5*(x**2) + (1-self.mu)/np.sqrt((x + self.mu)**2)+ self.mu/np.sqrt((x - (1-self.mu))**2)
         ydot = np.sqrt(2*Ust - jc)
@@ -622,18 +611,17 @@ class Simulation:
             for um_sc in um_list:
                 self.create_sat(um_sc)
 
-    def clear_scs(self,):
+    def clear_sats(self,):
         """
-            clear_scs:
-                clears satellite object instances from memory
-        
+        clear_sats - clears satellite object instances from simulation memory
+            
         """
 
         del(self.sats)
 
         self.sats = []
 
-    def set_e(self, new_e):
+    def set_e(self, new_e, verbose = True):
         """
         set_e - sets a new eccentricity value of binary system in er3bp 
 
@@ -641,16 +629,18 @@ class Simulation:
         ----------
         new_e: float
             new eccentricity of binary system, [0, 1)
-
+        verbose: bool
+            if True, prints confirmation message and sim state
         """
 
         self.e = new_e
 
-        print('Model eccentricity set to {}'.format(self.e))
-        self.print_sim_state()
+        if verbose:
+            print('Model eccentricity set to {}'.format(self.e))
+            self.print_sim_state()
 
 
-    def set_mu(self, new_mu):
+    def set_mu(self, new_mu, verbose = True):
         """
         set_mu - sets new mass ratio between p1 and p2
 
@@ -660,39 +650,54 @@ class Simulation:
         ----------
         mu: float
             mass ratio of primaries, (0, 0.5]
-
+        verbose: bool
+            if True, prints confirmation message and sim state
         """
 
         self.mu = new_mu
 
-        print('Model mu set to {}'.format(new_mu))
-        self.print_sim_state()
-        
-    def propogate_func(self, sc, Dtau, n_outputs, tol, method, eval_STM, p_event, event_func = None, epoch = False):
+        if verbose:
+            print('Model mu set to {}'.format(new_mu))
+            self.print_sim_state()
+            
+    def propogate_func(self, sc, Dtau: float, n_outputs: int, tol: tuple, method: str, 
+            eval_STM: bool, p_event: tuple, event_func = None, epoch = False):
         """
-            propogate_func:
-                function for use in the simulation.propogate_parallel, 
-                    simulation.propogate methods
+        propogate_func - base propogation function
 
-                    Args:
-                        sc (sc object): sc object for propogation
-                        tau_f (float): final non-dim time
-                        n_outputs (int): number of integration outputs
-                                        (NOT # of integration steps!) 
-                        tol (tuple): absolute and relative intergation tolerance, set to
-                            [1e-12, 1e-10] for high precision
-                        eval_STM: if True, propogates STM matrix
-                        p_event: tuple specifing state index and trigger value for poincare map
-                        event_func: func to record events
+        Function used in `simulation.propogate_parallel` and `simulation.propogate_series`
 
-                    Returns:
-                        s_new (6xN): sc states at each t_eval
-                        t_new (N): evaluated times
+        Implements `scipy.integrate.solve_ivp`
 
-                    Opt. Returns:
-                        y_hits: states at event triggers
-                        t_hits: times at event triggers 
-                         
+        Parameters
+        ----------
+        sat: satellite.Satellite object
+            sat object for propogation
+        Dtau: float
+            time of propogation
+        n_outputs: int
+            number of integration step outputs - *NOT* number of integration steps! 
+        method: str
+            method of integration, Options ['RK45', 'DOP853']     
+        tol: tuple
+            absolute and relative intergation tolerance, set to [1e-12, 1e-10] for high precision
+        eval_STM: bool
+            if True, propogates STM matrix
+        p_event: tuple
+            tuple specifing state index and trigger value for poincare map
+        event_func: function
+            function to record events
+
+        Returns
+        -------
+        s_new: 6/42xN array 
+            sat states at each t_eval
+        t_new: 1xN array
+            t_evals of the states
+        y_hits: array, optional
+            states at event triggers
+        t_hits: array, optional
+            times at event triggers 
         """
 
         ## Set analytic propogation flags
@@ -734,25 +739,36 @@ class Simulation:
 
         return s_new, tau_new
         
-    def propogate_parallel(self, Dtau, n_outputs = 1000, tol = [1e-6, 1e-3], method = 'RK45',
-            eval_STM = True, p_event = None, event_func = None, verbose = True, epoch = False):
+    def propogate_parallel(self, Dtau: float, n_outputs: int = 1000, tol: tuple = [1e-6, 1e-3], 
+            method: str = 'RK45', eval_STM: bool = True, p_event: tuple = None, 
+            event_func = None, verbose: bool = True, epoch = False):
         """
-            propogate_parallel:
-                propogates scs until tau_f in parallel
+        propogate_parallel - parallel propogation method 
 
-                    Args:
-                        tau_f (float): final non-dim time
-                        n_outputs (float): # of integration outputs
-                        tol (tuple): absolute and relative intergation tolerance, set to
-                            [1e-12, 1e-10] for high precision
-                        eval_STM: if True, propogates STM matrix
-                        p_event: tuple specifing state index and trigger value for poincare map
-                        event_func: func to record events
-                        verbose: if True, prints propogation info
+        Implements Python multiprocessing to propogate sats in parallel 
 
-                    Returns:
-                        None
+        Parameters
+        ----------
+        Dtau: float
+            time of propogation
+        n_outputs: int
+            number of integration step outputs - *NOT* number of integration steps! 
+        tol: tuple
+            absolute and relative intergation tolerance, set to [1e-12, 1e-10] for high precision
+        method: str
+            method of integration, Options ['RK45', 'DOP853']     
+        eval_STM: bool
+            if True, propogates STM matrix
+        p_event: tuple
+            tuple specifing state index and trigger value for poincare map
+        event_func: function
+            function to record events
+        verbose: bool
+            if True, prints propogation report
 
+        Returns
+        -------
+        None
         """
         # Create multiprocessing pool
         pool = mp.Pool(os.cpu_count())
@@ -764,17 +780,11 @@ class Simulation:
         sc_props = pool.map(prop_partial, self.sats)
         pool.terminate()
 
-        print(sc_props)
-
         # Assign new states and taus to sc
         for i, sc_prop in enumerate(sc_props):
 
             s = sc_prop[0][0:6, :]
             taus = sc_prop[1]
-
-            print(s)
-            print(taus)
-            
             self.sats[i].set_state(s)
             self.sats[i].set_tau(taus)
 
@@ -797,24 +807,32 @@ class Simulation:
             print('{} satellite propogated in parallel'.format(len(self.sats)))
             print('Computaion time {}'.format(dt))
 
-    def propogate_series(self, Dtau, n_outputs = 1000, tol = [1e-6, 1e-3], method = 'RK45',
-            eval_STM = True, p_event = None, event_func = None, verbose = True, epoch = False):
+    def propogate_series(self, Dtau: float, n_outputs: int = 1000, tol: tuple = [1e-6, 1e-3], 
+            method: str = 'RK45', eval_STM: bool = True, p_event: tuple = None, 
+            event_func = None, verbose: bool = True, epoch = False):
         """ 
-            propogate_series: 
-                propogates sc in series until t
-                
-                    Args:
-                        tau_f (float): final non-dim time
-                        n_outputs (float): # of integration outputs
-                        tol (tuple): absolute and relative intergation tolerance, set to
-                            [1e-12, 1e-10] for high precision
-                        eval_STM: if True, propogates STM matrix
-                        p_event: tuple specifing state index and trigger value for poincare map
-                        event_func: func to record events
-                        verbose: if True, prints propogation info
+        Parameters
+        ----------
+        Dtau: float
+            time of propogation
+        n_outputs: int
+            number of integration step outputs - *NOT* number of integration steps! 
+        tol: tuple
+            absolute and relative intergation tolerance, set to [1e-12, 1e-10] for high precision
+        method: str
+            method of integration, Options ['RK45', 'DOP853']     
+        eval_STM: bool
+            if True, propogates STM matrix
+        p_event: tuple
+            tuple specifing state index and trigger value for poincare map
+        event_func: function
+            function to record events
+        verbose: bool
+            if True, prints propogation report
 
-                    Returns:
-                        None
+        Returns
+        -------
+        None
         """
 
         t0 = time.perf_counter()
@@ -841,7 +859,6 @@ class Simulation:
                 self.sats[i].set_events(events)
                 self.sats[i].set_etaus(etaus)
 
-
         # Print out computational time and action
         tf = time.perf_counter()
         dt = round(tf-t0, 3)
@@ -850,31 +867,44 @@ class Simulation:
             print('{} satellite propogated in series'.format(len(self.sats)))
             print('Computaion time {}'.format(dt))
 
-    def propogate(self, tau_f, sc = None, n_outputs = None, tol = [1e-6, 1e-3], method = 'RK45', eval_STM = True, 
-        p_event = None, event_func = None, epoch = False, primaries = False, verbose = True):
+    def propogate(self, dtau: float, sat = None, n_outputs: int = None, tol: tuple = [1e-6, 1e-3], 
+            method: str = 'RK45', eval_STM: bool = True, p_event: tuple = None, event_func = None, 
+            epoch: bool = False, primaries: bool = False, verbose: bool = True):
         """ 
-            propogate: 
-                General propogation function, determines optimal propogation type and
-                    initiates propogation of sim.scs
+        propogate - general propogation function of PyRAA
+
+        Determines optimal propogation type and initiates propogation of sim.sats
                 
-                    Args:
-                        tau_f (float): final non-dim time
-                        n_outputs (float): # of integration outputs
-                        tol (tuple): absolute and relative intergation tolerance, set to
-                            [1e-12, 1e-10] for high precision
-                        eval_STM: if True, propogates STM matrix
-                        p_event: tuple specifing state index and trigger value for poincare map
-                        event_func: func to record events
-                        verbose: if True, prints propogation info
+        Parameters
+        ----------
+        dtau: float
+            time of propogation
+        n_outputs: int
+            number of integration step outputs - *NOT* number of integration steps! 
+        tol: tuple
+            absolute and relative intergation tolerance, set to [1e-12, 1e-10] for high precision
+        method: str
+            method of integration, Options ['RK45', 'DOP853']     
+        eval_STM: bool
+            if True, propogates STM matrix
+        p_event: tuple
+            tuple specifing state index and trigger value for poincare map
+        event_func: function
+            function to record events
+        primaries: bool
+            if True, propogates primary positions
+        verbose: bool
+            if True, prints propogation report
 
-                    Returns:
-                        None
-
+        Returns
+        -------
+        None
         """
 
-        if sc == None:
+        ## Place to add in specific sat propogation capability
+        if sat == None:
             # Decide to prop in parallel or series
-            if len(self.sats)<4:
+            if (len(self.sats) < 2) or (len(self.sats) * dtau < 10):
                 propogate_func = self.propogate_series
                 if verbose:
                     print('Propogating in series..')
@@ -884,28 +914,69 @@ class Simulation:
                     print('Propogating in parallel..')
 
             if n_outputs== None:
-                n_outputs = int(np.abs(tau_f * 500))
+                n_outputs = int(np.abs(dtau * 500))
 
             # Propogate sc 
-            propogate_func(tau_f, n_outputs, tol, method, eval_STM, p_event, event_func, verbose, epoch) 
+            propogate_func(dtau, n_outputs, tol, method, eval_STM, p_event, event_func, verbose, epoch) 
 
         if primaries:
             self.prop_primaries()
 
     def prop_periodic(self, S0, T, N):
+        """
+        prop_periodic - resets S0 after T, N times
+        
+        A "cheater" function to generate periodic orbits over long time intervals
+        when precision, time, and motivation are running low :)
 
-        sc = self.create_sat(S0)
+        Parameters
+        ----------
+        S0: 1x6 array
+            Initial periodic state array
+        T: float
+            Period 
+        N: int
+            number of periods to repeat
 
+
+        """
+
+        sat = self.create_sat(S0)
         for iter in range(N):
             self.propogate(T)
-            s_f = sc.states
+            s_f = sat.states
             err = np.linalg.norm(s_f - S0)
             print('Orbit {:} | Error {:3.7f}'.format(N, err), end = '\r')
-            sc.states = S0
+            sat.states = S0
 
 
     @nb.jit(parallel = True)
     def prop_primaries(self, taus = None, mu = None, e = None):
+        """
+        prop_primaries - propogates primary masses
+
+
+        Uses dynamical model to sovle for primary positions and Lagrange points
+        given an array of times. Yes, this function is silly for the CR3BP! 
+
+
+        *Useful for solving Lpoints at a given mu, e!*
+
+        Parameters
+        ----------
+        taus: float
+            array of times to solve for primary positions
+        mu: float
+            mass ratio of system
+        e: float
+            eccentricity of system
+    
+        """
+
+        if self.prim_prop_flag:
+            del(self.p1_states) 
+            del(self.p2_states)
+            del(self.LP_states)
 
         print('Propogating Primaries and Lagrange Points')
         ## Populate the primary and Lpoint arrays
@@ -928,7 +999,7 @@ class Simulation:
         elif self.dynamics == 'ER3BP':
             time_array = np.zeros_like(taus)
             for i in nb.prange(N):
-                time_array[i] = models.calc_E_series(taus[i], e, self.s, self.Js)
+                time_array[i] = Models.calc_E_series(taus[i], e, self.s, self.Js)
             
         p_states = np.zeros((N, 2, 6))
         L_states = np.zeros((N, 5, 6))
@@ -964,6 +1035,13 @@ class Simulation:
         if self.prim_prop_flag == False:
             print('Propogating Primary States..')
             self.prop_primaries()
+
+        if self.inert_prop_flag:
+            for sat in self.sats:
+                del(sat.states_inert)
+            del(self.p1_inert_states)
+            del(self.p2_inert_states)
+            del(self.LP_inert_states)
 
         print('Beginning Inertial calculation..')
         t0 = time.perf_counter()
