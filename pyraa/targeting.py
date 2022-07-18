@@ -269,9 +269,9 @@ class Targeter(Simulation):
 
         # Classify elements
         for el, val in enumerate(eig_vals):
-            if np.isclose(val, 1 + 0j, atol = 1e-1):
+            if np.isclose(val, 1 + 0j, atol = 1e-4):
                 U_els.append(el)
-            elif np.isclose(val.imag, 0j, atol = 1e-10):
+            elif np.isclose(val.imag, 0j, atol = 1e-5):
                 R_els.append(el)
             else:
                 C_els.append(el)
@@ -319,15 +319,17 @@ class Targeter(Simulation):
 
         Uvec_dict_array = [eig_vecs[:, el].real.T for el in U_argpairs]
         Rvec_dict_array = [eig_vecs[:, el].real.T for el in R_argpairs]
-        Cvec_dict_array= [eig_vecs[:, el].T for el in C_argpairs]
+        Cvec_dict_array = [eig_vecs[:, el].T for el in C_argpairs]
 
-        self.val_dict = {'U' : U_dict_array,
-                    'R' : R_dict_array,
-                    'C' : C_dict_array
+        self.val_dict = {
+            'U' : U_dict_array,
+            'R' : R_dict_array,
+            'C' : C_dict_array
         }
-        self.vec_dict = {'U' : Uvec_dict_array,
-                    'R' : Rvec_dict_array,
-                    'C' : Cvec_dict_array
+        self.vec_dict = {
+            'U' : Uvec_dict_array,
+            'R' : Rvec_dict_array,
+            'C' : Cvec_dict_array
         }
 
         self.num_U = len(self.val_dict['U'])
@@ -356,7 +358,7 @@ class Targeter(Simulation):
             R_iter += 1
 
         self.PCexp_array = 1/T*np.log(self.val_array)
-        self.PCexp_array[np.abs(self.PCexp_array[:, :])< 1e-10] = 0
+        self.PCexp_array[np.abs(self.PCexp_array[:, :]) < 1e-10] = 0
 
         self.nu_array = np.array([0.5*(val + 1/val) for val in self.val_array[:, 0]]).real
 
