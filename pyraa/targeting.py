@@ -103,6 +103,9 @@ class Targeter(Simulation):
         
         # set solution precision
         self.eps = eps
+
+
+        self.psu_arc = False
         
 
     def solve(self, S_g: list, T_g: float, verbose: bool = True):
@@ -143,7 +146,7 @@ class Targeter(Simulation):
             self.propogate(T_g, verbose= False, method= 'DOP853', tol = [1e-12, 1e-10])
             S_g, T_g = self._update_state(sc)
             
-            self.clear_scs()
+            self.clear_sats()
 
             if verbose:
                 print('Error: {}'.format(self.error), end='\r')
@@ -256,7 +259,7 @@ class Targeter(Simulation):
         self.M = sat.get_STM()
         eig_vals, eig_vecs = np.linalg.eig(self.M)
         eig_vecs[np.abs(eig_vecs[:, :])  < 1e-10] = 0 
-        self.clear_scs()
+        self.clear_sats()
 
         labels = ['U', 'R', 'C']
         U_els = []
@@ -269,15 +272,28 @@ class Targeter(Simulation):
 
         # Classify elements
         for el, val in enumerate(eig_vals):
-            if np.isclose(val, 1 + 0j, atol = 1e-4):
+            print(val)
+            unit_cond = np.isclose(val.real, 1, atol = 1e-5)
+            complex_cond = np.abs(val.imag) > 1e-3
+            real_cond = np.isclose(val.imag, 0, atol= 1e-9)
+            print(unit_cond, complex_cond, real_cond)
+            if unit_cond:
                 U_els.append(el)
-            elif np.isclose(val.imag, 0j, atol = 1e-5):
+            elif real_cond:
                 R_els.append(el)
-            else:
+            elif complex_cond:
                 C_els.append(el)
+            else:
+                raise Exception('No classification')
+                
             nu = 0.5*(val + 1/val).real
             nus.append(nu)
 
+
+        num_U = int(0.5*len(U_els))
+        num_C = int(0.5*len(C_els))
+        num_R = int(0.5*len(R_els))
+        
         nus = np.array(nus)
         U_argpairs = []
         R_argpairs = []
@@ -299,6 +315,7 @@ class Targeter(Simulation):
                     C_argpairs.append(arg_pair)
                     C_nus.append(nu)
 
+  
         if len(R_argpairs) != 0:
             R_argpairs_temp = R_argpairs.copy()
             R_arg_order = np.argsort(R_nus)
@@ -309,9 +326,11 @@ class Targeter(Simulation):
         if len(C_argpairs) != 0:
             C_argpairs_temp = C_argpairs.copy()
             C_arg_order = np.argsort(C_nus)
-            for i in range(len(R_argpairs)):
+            for i in range(len(C_argpairs)):
                 arg_el = C_arg_order[i]
                 C_argpairs[i] = C_argpairs_temp[arg_el]
+
+        print(U_argpairs, C_argpairs, R_argpairs)
 
         U_dict_array = [eig_vals[el].real for el in U_argpairs]
         R_dict_array = [eig_vals[el].real for el in R_argpairs]
@@ -321,38 +340,36 @@ class Targeter(Simulation):
         Rvec_dict_array = [eig_vecs[:, el].real.T for el in R_argpairs]
         Cvec_dict_array = [eig_vecs[:, el].T for el in C_argpairs]
 
+        print(U_dict_array, C_dict_array, R_dict_array)
+
         self.val_dict = {
             'U' : U_dict_array,
+            'C' : C_dict_array,
             'R' : R_dict_array,
-            'C' : C_dict_array
         }
         self.vec_dict = {
             'U' : Uvec_dict_array,
+            'C' : Cvec_dict_array,
             'R' : Rvec_dict_array,
-            'C' : Cvec_dict_array
         }
-
-        self.num_U = len(self.val_dict['U'])
-        self.num_R = len(self.val_dict['R'])
-        self.num_C = len(self.val_dict['C'])
 
         self.val_array = np.zeros((3, 2), dtype = np.complex)
         self.vec_array = np.zeros((3, 2, 6), dtype= np.complex)
 
         U_iter = 0
-        while U_iter < self.num_U:
+        while U_iter < num_U:
             self.val_array[U_iter] = self.val_dict['U'][U_iter]
             self.vec_array[U_iter] = self.vec_dict['U'][U_iter]
             U_iter += 1
 
         C_iter = 0
-        while C_iter < self.num_C:
+        while C_iter < num_C:
             self.val_array[U_iter + C_iter] = self.val_dict['C'][C_iter]
             self.vec_array[U_iter + C_iter] = self.vec_dict['C'][C_iter]
             C_iter += 1
 
         R_iter = 0
-        while R_iter < self.num_R:
+        while R_iter < num_R:
             self.val_array[U_iter + C_iter + R_iter] = self.val_dict['R'][R_iter]
             self.vec_array[U_iter + C_iter + R_iter] = self.vec_dict['R'][R_iter]
             R_iter += 1
@@ -363,7 +380,7 @@ class Targeter(Simulation):
         self.nu_array = np.array([0.5*(val + 1/val) for val in self.val_array[:, 0]]).real
 
         if verbose:
-            print('| {} Unitary | {} Complex | {} Real | '.format(self.num_U, self.num_R, self.num_C))
+            print('| {} Unitary | {} Complex | {} Real | '.format(num_U, num_C, num_R))
             print('Nus || {:5.10f} | {:5.10f} | {:5.10f} ||'.format(
                 self.nu_array[0], self.nu_array[1], self.nu_array[2]))
             print()
@@ -480,6 +497,10 @@ class Targeter(Simulation):
             else:
                 FX_i[el] = Sf[Xc_el] - self.Xc_dict[var]
 
+        # if self.psu_arc and self.iter > 0.5:
+        #     psu_constraint = (self.Xds[-1] - self.Xd_st).T @ self.null_st - self.step_size
+        #     FX_i = np.hstack((FX_i, [psu_constraint]))
+
         return FX_i
 
     def _calc_DFX(self, STMf, dS_f):
@@ -510,6 +531,10 @@ class Targeter(Simulation):
                     DFX_i[i, j] = dS_f[el_t]
                 else:
                     DFX_i[i, j] = STMf[el_t, el_0]
+
+        # if self.psu_arc and self.iter > 0.5:
+        #     psu_jacob = self.null_st
+        #     DFX_i = np.vstack((DFX_i, psu_jacob))
 
         return DFX_i
 
@@ -637,7 +662,8 @@ class Continuation(Targeter):
 
     """
 
-    def __init__(self, Xd_vars: list, Xc_dict: dict, dynamics: str, mu: float, e: float, eps: float = 1e-10):
+    def __init__(self, Xd_vars: list, Xc_dict: dict, dynamics: str, 
+        mu: float, e: float, eps: float = 1e-10):
 
         Targeter.__init__(self, Xd_vars, Xc_dict, dynamics, mu, e, eps)
 
@@ -751,6 +777,9 @@ class Continuation(Targeter):
         
         """
 
+        if type == 'psuedo-arc':
+            self.psu_arc = True
+
         if stop_dict != None:
             key = str(list(stop_dict.keys())[0])
             for el in range(len(self.Xd_vars)):
@@ -763,12 +792,14 @@ class Continuation(Targeter):
             continue_bool = self._value_stop_func(S_g, T_g, S_g, T_g)
 
         if iter_stop != None:
-            iter = 0
+            self.iter = 0
             self.iterstop = iter_stop
-            continue_bool = self._iter_stop_func(iter)
+            continue_bool = self._iter_stop_func(self.iter)
 
         if type == 'pseudo-arc':
             cont_func = self.psuedo_step_cont
+
+        self.step_size = step_size
 
         self.States = []
         self.Ts = []
@@ -792,9 +823,11 @@ class Continuation(Targeter):
             self.pc_exps.append(self.PCexp_array)
             self.nus.append(self.nu_array)
 
-            self.clear_scs()
+            self.clear_sats()
 
             S_g, T_g = self._psuedo_step_cont(dXd0_sign, step_size)
+
+            self.Xd_st = self.Xds[-1]
 
             if stop_dict != None:
                 continue_bool = self._value_stop_func(
@@ -802,9 +835,9 @@ class Continuation(Targeter):
                     S_old = self.S, T_old = self.T)
 
             if iter_stop != None:
-                iter += 1
-                print(' {:3.2f} %'.format(iter/self.iterstop*100))
-                continue_bool = self._iter_stop_func(iter)
+                self.iter += 1
+                print(' {:3.2f} %'.format(self.iter/self.iterstop*100))
+                continue_bool = self._iter_stop_func(self.iter)
 
         self.JCs = np.array(self.JCs)
         self.vecs = np.array(self.vecs)
@@ -839,8 +872,10 @@ class Continuation(Targeter):
         NA = scipy.linalg.null_space(self.DFX)
         dnull = NA.T[null_el]
 
+        
         if np.isclose(np.sign(dnull[0]), dXd0_sign) != True:
             dnull = -1*dnull
+            
 
         self.NA = scipy.linalg.null_space(self.DFX)
         Xd_ip1 = Xd_array + step_size*dnull
@@ -849,6 +884,7 @@ class Continuation(Targeter):
 
         self.S_g = S_g 
         self.T_g = T_g
+        self.null_st = dnull
 
         return S_g, T_g
 

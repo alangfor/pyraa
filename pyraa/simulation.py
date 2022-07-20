@@ -944,10 +944,10 @@ class Simulation:
         sat = self.create_sat(S0)
         for iter in range(N):
             self.propogate(T)
-            s_f = sat.states
+            s_f = sat.state
             err = np.linalg.norm(s_f - S0)
             print('Orbit {:} | Error {:3.7f}'.format(N, err), end = '\r')
-            sat.states = S0
+            sat.state = S0
 
 
     @nb.jit(parallel = True)
@@ -1472,7 +1472,6 @@ class Simulation:
 
 
             if D2:
-                print(sc.color)
                 if sc.color == None:
                     color = colors[i]
                 else:
